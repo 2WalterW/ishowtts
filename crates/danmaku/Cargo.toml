@@ -1,0 +1,25 @@
+[package]
+name = "danmaku"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+base64 = { workspace = true }
+futures = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["rt", "rt-multi-thread", "macros", "sync", "time", "net"] }
+tokio-stream = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+regex = "1"
+toml = "0.8"
+chrono = { workspace = true }
+lazy_static = "1"
+
+[dev-dependencies]
+serde_json = { workspace = true }

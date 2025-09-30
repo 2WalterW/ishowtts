@@ -1,0 +1,11 @@
+[build]
+target = "index.html"
+dist = "dist"
+filehash = false
+
+[serve]
+proxy = [
+    { rewrite = "/api", backend = "http://127.0.0.1:27121" },
+    { rewrite = "/shimmy", backend = "http://127.0.0.1:27121" },
+    { rewrite = "/v1", backend = "http://127.0.0.1:27121" }
+]

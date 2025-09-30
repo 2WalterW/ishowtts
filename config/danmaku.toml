@@ -1,0 +1,16 @@
+# Twitch 配置
+[twitch]
+# enabled = true
+# client_id = "your_twitch_client_id"
+# client_secret = "your_twitch_client_secret"
+# bot_username = "your_bot_account"
+# oauth_token = "oauth:your_oauth_token"
+# channels = ["your_channel"]
+
+# YouTube 配置
+[youtube]
+# enabled = true
+# client_id = "your_google_client_id"
+# client_secret = "your_google_client_secret"
+# refresh_token = "your_refresh_token"
+# channel_id = "target_channel_id"

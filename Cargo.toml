@@ -1,0 +1,42 @@
+[workspace]
+members = [
+    "crates/backend", "crates/danmaku", "crates/danmaku-gateway", "crates/danmaku-service",
+    "crates/frontend-web",
+    "crates/tts-engine",
+]
+resolver = "2"
+
+[workspace.package]
+edition = "2021"
+rust-version = "1.76"
+authors = ["ishowtts developers"]
+license = "MIT"
+
+[workspace.dependencies]
+anyhow = "1"
+async-trait = "0.1"
+axum = { version = "0.7", features = ["macros", "json", "http1", "http2", "ws", "multipart"] }
+base64 = "0.22"
+bincode = "1.3"
+bytes = "1"
+chrono = { version = "0.4", features = ["serde"] }
+clap = { version = "4", features = ["derive"] }
+config = "0.14"
+futures = "0.3"
+hound = "3"
+parking_lot = "0.12"
+pyo3 = { version = "0.21", features = ["auto-initialize"] }
+numpy = "0.21"
+reqwest = { version = "0.11", features = ["json", "stream", "rustls-tls"], default-features = false }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "1"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time", "fs", "process", "io-std", "io-util"] }
+tokio-stream = { version = "0.1", features = ["sync"] }
+tokio-util = "0.7"
+tower = "0.4"
+tower-http = { version = "0.5", features = ["trace", "cors"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+rodio = "0.17"

@@ -1,0 +1,150 @@
+# Rust build artifacts
+target/
+Cargo.lock
+**/*.rs.bk
+*.pdb
+
+# Python
+**/*.pyc
+**/*.pyo
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+.venv/
+ENV/
+env/
+.env
+.venv
+
+# IDEs
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/*.log
+*.log.*
+*.out
+
+# Model files and caches (大文件)
+cache/
+hf_cache/
+data/cache/
+third_party/F5-TTS/ckpts/
+third_party/index-tts/checkpoints/
+*.safetensors
+*.ckpt
+*.pt
+*.pth
+*.bin
+*.onnx
+*.tflite
+*.pb
+*.h5
+
+# Voice reference files (if large)
+data/voices/*.wav
+data/voices/*.mp3
+data/voices/*.flac
+data/voices/overrides/
+
+# Sensitive configuration and tokens
+config/ishowtts.toml
+config/*token*
+config/*secret*
+config/*key*
+config/*password*
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+oauth_token
+.env.local
+.env.*.local
+
+# Keep example configs
+!config/*.example.toml
+!config/*.sample.toml
+!config/danmaku*.toml
+
+# WASM build outputs
+crates/frontend-web/dist/
+crates/frontend-web/pkg/
+crates/frontend-web/.trunk/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+.DS_Store
+Thumbs.db
+
+# Test outputs
+test-results/
+coverage/
+
+# System files
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# Audio test files (if large)
+# Commented out to allow small voice references
+# *.wav
+# *.mp3
+# *.flac
+# *.ogg
+# *.m4a
+
+# Keep voice reference files (they're small)
+# But exclude override directory
+data/voices/overrides/
+
+# Node modules (if any)
+node_modules/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Third-party submodules (large external repos)
+third_party/*/.git
+third_party/*/
+
+# Keep important documentation and small assets
+!README.md
+!LICENSE
+!.gitignore
+!Cargo.toml
+!*/Cargo.toml

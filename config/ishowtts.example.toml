@@ -1,0 +1,53 @@
+bind_addr = "0.0.0.0:27121"
+default_voice = "walter"
+
+[api]
+max_parallel = 3
+
+[f5]
+model = "F5TTS_v1_Base"
+python_package_path = "../third_party/F5-TTS/src"
+# Uncomment and adjust paths if you have local checkpoints or cached assets
+# ckpt_file = "../checkpoints/model_1250000.safetensors"
+# vocab_file = "../checkpoints/vocab.json"
+hf_cache_dir = "../data/cache/huggingface"
+device = "cuda"
+
+[[f5.voices]]
+id = "walter"
+reference_audio = "../data/voices/walter_reference.wav"
+# Use a transcript that matches the full reference clip so duration modelling stays aligned.
+reference_text = "No, you clearly don't know who you're talking to, so let me clue you in. I am not in danger, Skyler. I am the danger. A guy opens his door and gets shot, and you think that of me? No, I am."
+language = "en-US"
+engine_label = "F5"
+preload = true
+
+[shimmy]
+model_name = "f5-tts-demo"
+template = "voice:demo"
+ctx_len = 256
+n_threads = 2
+
+
+[danmaku.twitch]
+# Provide a real Twitch account with chat:read scope if you want automatic danmaku ingestion.
+enabled = false
+bot_username = "YOUR_TWITCH_USERNAME"
+oauth_token = "YOUR_TWITCH_OAUTH_TOKEN"
+
+[index_tts]
+python_package_path = "../third_party/index-tts"
+config_file = "../third_party/index-tts/checkpoints/config.yaml"
+model_dir = "../third_party/index-tts/checkpoints"
+device = "cuda"
+use_fp16 = false
+use_cuda_kernel = false
+use_deepspeed = false
+
+[[index_tts.voices]]
+id = "walter-index"
+reference_audio = "../data/voices/SayMyName.mp3"
+reference_text = "You know, you all know exactly who i am, say my name!"
+language = "en-US"
+engine_label = "IndexTTS"
+preload = true

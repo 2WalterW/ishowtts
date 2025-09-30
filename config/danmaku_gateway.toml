@@ -1,0 +1,14 @@
+[queue]
+capacity = 512
+rate_limit_per_sec = 10.0
+
+[filter]
+max_words = 77
+max_chars = 280
+allow_links = false
+banned_keywords = []
+
+[tts]
+endpoint = "http://127.0.0.1:27121/api/tts"
+voice_id = "walter"
+timeout_secs = 15
