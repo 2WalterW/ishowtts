@@ -39,6 +39,9 @@ fi
 export PATH="$HOME/.cargo/bin:$PATH"
 export F5_TTS_QUIET=${F5_TTS_QUIET:-1}
 
+# Fix protobuf compatibility issue on Jetson
+export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+
 # Ensure OpenFST (for IndexTTS/pynini) is visible when the backend launches.
 if [[ -z "${OPENFST_ROOT:-}" && -d /opt/openfst-1.8.3 ]]; then
   export OPENFST_ROOT=/opt/openfst-1.8.3
