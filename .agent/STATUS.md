@@ -1,20 +1,30 @@
 # iShowTTS Optimization Status
 
-**Date**: 2025-09-30
-**Status**: ✅ **COMPLETE**
+**Date**: 2025-09-30 (Updated)
+**Status**: ✅ **COMPLETE & VALIDATED**
 
 ---
 
 ## 🎯 Achievement
 
 **Target**: RTF < 0.3 (Whisper-level TTS speed)
-**Result**: **RTF = 0.266** ✅
+**Result**: **RTF = 0.278 (Mean), 0.274 (Best)** ✅
 
-### Performance Metrics
+### Performance Metrics (Latest - 2025-09-30)
 
-- **Mean RTF**: 0.266 ✅ (target < 0.3)
+- **Mean RTF**: 0.278 ✅ (target < 0.3)
+- **Best RTF**: 0.274 ✅
+- **Mean Speedup**: 3.59x ✅ (target > 3.3x)
+- **Best Speedup**: 3.65x ✅
+- **Synthesis Time**: 2.3s for 8.4s audio
+- **Overall Improvement**: 4.8x faster than baseline
+- **Variance**: ±1.5% (excellent consistency)
+
+### Performance Metrics (Previous Best - 2025-09-30)
+
+- **Mean RTF**: 0.266 ✅
 - **Best RTF**: 0.264 ✅
-- **Mean Speedup**: 3.76x ✅ (target > 3.3x)
+- **Mean Speedup**: 3.76x ✅
 - **Best Speedup**: 3.79x ✅
 - **Synthesis Time**: 2.2s for 8.4s audio
 - **Overall Improvement**: 5.0x faster than baseline
@@ -80,8 +90,21 @@ All optimizations validated on Jetson AGX Orin:
 - PyTorch 2.5.0a0+872d972e41.nv24.08
 - CUDA 12.6
 - Device: Orin (32GB unified memory)
+- Power Mode: MAXN (locked with jetson_clocks)
 
-Test results:
+### Latest Test Results (2025-09-30, GPU locked):
+```
+Run 1: 2.337s | RTF: 0.279 | Speedup: 3.58x
+Run 2: 2.327s | RTF: 0.278 | Speedup: 3.60x
+Run 3: 2.333s | RTF: 0.279 | Speedup: 3.59x
+Run 4: 2.363s | RTF: 0.282 | Speedup: 3.54x
+Run 5: 2.293s | RTF: 0.274 | Speedup: 3.65x
+
+Mean: 2.330s | RTF: 0.278 | Speedup: 3.59x ✅
+Variance: ±1.5% (excellent)
+```
+
+### Previous Best (2025-09-30, initial):
 ```
 Run 1: 2.222s | RTF: 0.265 | Speedup: 3.77x
 Run 2: 2.216s | RTF: 0.265 | Speedup: 3.78x
@@ -109,17 +132,37 @@ Current performance is sufficient for real-time livestream danmaku.
 ## 📖 Documentation
 
 - [FINAL_OPTIMIZATION_REPORT.md](.agent/FINAL_OPTIMIZATION_REPORT.md) - Full report
+- [CURRENT_STATUS_2025_09_30.md](.agent/CURRENT_STATUS_2025_09_30.md) - Latest maintenance plan
 - [README.md](../README.md) - Project overview
 - [OPTIMIZATION_COMPLETE.md](.agent/OPTIMIZATION_COMPLETE.md) - Previous summary
+
+---
+
+## ⚙️ Important: GPU Performance Lock
+
+**CRITICAL for consistent performance:**
+
+```bash
+# Lock GPU to maximum performance (run after reboot)
+sudo jetson_clocks
+sudo nvpmodel -m 0
+```
+
+**Impact**:
+- Without lock: Mean RTF = 0.352, Variance = ±16%
+- With lock: Mean RTF = 0.278, Variance = ±1.5%
+
+Add to startup script or run manually for best performance.
 
 ---
 
 ## 🎉 Summary
 
 ✅ **Target Achieved**: RTF < 0.3
-✅ **5.0x Speedup**: From baseline RTF=1.32 to RTF=0.27
+✅ **4.8x Speedup**: From baseline RTF=1.32 to RTF=0.28
 ✅ **Production Ready**: Tested and validated
 ✅ **Fully Documented**: Complete optimization report
 ✅ **Code Committed**: All changes pushed to repository
+✅ **Consistent Performance**: ±1.5% variance with GPU locked
 
 **Mission Accomplished!** 🚀
