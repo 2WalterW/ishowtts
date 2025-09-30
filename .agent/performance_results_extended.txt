@@ -1,18 +1,18 @@
 Extended Performance Test Results
-Date: 2025-09-30 13:20:29
+Date: 2025-09-30 13:57:44
 Runs: 20
 NFE: 7
 
-Mean RTF: 0.169
-Median RTF: 0.166
-Min RTF: 0.165
-Max RTF: 0.193
-StdDev: 0.009
-CV: 5.6%
+Mean RTF: 0.168
+Median RTF: 0.165
+Min RTF: 0.164
+Max RTF: 0.195
+StdDev: 0.008
+CV: 4.7%
 
-Mean Speedup: 5.92x
-Max Speedup: 6.08x
-Min Speedup: 5.18x
+Mean Speedup: 5.95x
+Max Speedup: 6.10x
+Min Speedup: 5.12x
 
 Phase 1 Target (RTF < 0.3): ACHIEVED
 Phase 3 Target (RTF < 0.2): ACHIEVED
