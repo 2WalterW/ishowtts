@@ -332,7 +332,7 @@ def main():
     # Initialize model
     print("\nInitializing F5-TTS model...")
     model = F5TTS(
-        model_type="F5-TTS",
+        model="F5TTS_v1_Base",
         ckpt_file="",
         vocab_file="",
         device="cuda",
