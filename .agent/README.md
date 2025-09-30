@@ -2,120 +2,293 @@
 
 This directory contains optimization work, plans, and documentation for iShowTTS performance improvements.
 
-## 🎯 Mission: Achieve Whisper-level TTS Speed (RTF < 0.3)
+## 🎯 Mission Status: Phase 1 COMPLETE ✅
 
-**Status**: ✅ **COMPLETE** (2025-09-30)
-**Current Result**: RTF = 0.278 (Mean), 0.274 (Best) ✅
-**Speedup**: 3.59x real-time ✅
-**Phase**: Ready for Phase 2 optimizations (TensorRT, batching)
+**Current Performance**: RTF = 0.241 (Mean), 0.239 (Best) ✅
+**Target**: RTF < 0.3 (Whisper-level speed)
+**Speedup**: 4.14x real-time ✅
+**Status**: Production ready, Phase 2 planning complete
 
-## 📁 Key Documents (Priority Order)
+---
 
-### ⭐ START HERE
-1. **[MAINTENANCE_PLAN_2025_09_30.md](MAINTENANCE_PLAN_2025_09_30.md)** - Complete maintenance & optimization guide
-2. **[STATUS.md](STATUS.md)** - Quick status summary & metrics
-3. **[OPTIMIZATION_ROADMAP_NEXT.md](OPTIMIZATION_ROADMAP_NEXT.md)** - Phase 2 detailed plans
+## 📁 Key Documents (START HERE)
 
-### Current Status & Reports
-- **[SESSION_2025_09_30.md](SESSION_2025_09_30.md)** - Latest session summary
-- **[FINAL_OPTIMIZATION_REPORT.md](FINAL_OPTIMIZATION_REPORT.md)** - Complete Phase 1 report
-- **[CURRENT_STATUS_2025_09_30.md](CURRENT_STATUS_2025_09_30.md)** - Troubleshooting guide
+### 🌟 For Next Session
+1. **[PHASE2_IMPLEMENTATION_PLAN.md](PHASE2_IMPLEMENTATION_PLAN.md)** ⭐ **START HERE FOR PHASE 2**
+   - Complete TensorRT vocoder integration plan
+   - Code examples and step-by-step guide
+   - Timeline: 2-3 weeks, Target: RTF < 0.20
 
-### Historical Documents
-- **[OPTIMIZATION_COMPLETE.md](OPTIMIZATION_COMPLETE.md)** - Previous completion summary
-- **[optimizations_latest.md](optimizations_latest.md)** - Latest optimizations applied
-- **[python_optimizations_applied.md](python_optimizations_applied.md)** - Python-specific changes
-- **[optimization_summary.md](optimization_summary.md)** - Mid-project summary
-- **[optimization_roadmap.md](optimization_roadmap.md)** - Implementation roadmap
-- **[optimization_plan.md](optimization_plan.md)** - Initial optimization strategy
-- **[f5_tts_optimizations.md](f5_tts_optimizations.md)** - F5-TTS specific optimizations
+2. **[MAINTENANCE_PLAN_2025_09_30.md](MAINTENANCE_PLAN_2025_09_30.md)** - Daily maintenance checklist
 
-## Quick Start
+### 📊 Current Status
+3. **[STATUS.md](STATUS.md)** - Quick status summary & metrics
+4. **[PERFORMANCE_LOG_2025_09_30.md](PERFORMANCE_LOG_2025_09_30.md)** - Latest test results (RTF=0.241)
+5. **[SESSION_2025_09_30_LATE.md](SESSION_2025_09_30_LATE.md)** - Latest session summary
 
-### 1. Build with Optimizations
+### 📚 Phase 1 Documentation
+6. **[FINAL_OPTIMIZATION_REPORT.md](FINAL_OPTIMIZATION_REPORT.md)** - Complete Phase 1 report
+7. **[SESSION_2025_09_30.md](SESSION_2025_09_30.md)** - Morning session summary
+8. **[OPTIMIZATION_ROADMAP_NEXT.md](OPTIMIZATION_ROADMAP_NEXT.md)** - Phase 2 overview
+
+### 📜 Historical Documents
+9. **[OPTIMIZATION_COMPLETE.md](OPTIMIZATION_COMPLETE.md)** - Previous completion summary
+10. **[optimizations_latest.md](optimizations_latest.md)** - Latest optimizations applied
+11. **[python_optimizations_applied.md](python_optimizations_applied.md)** - Python-specific changes
+12. **[optimization_summary.md](optimization_summary.md)** - Mid-project summary
+13. **[optimization_roadmap.md](optimization_roadmap.md)** - Implementation roadmap
+14. **[optimization_plan.md](optimization_plan.md)** - Initial optimization strategy
+15. **[f5_tts_optimizations.md](f5_tts_optimizations.md)** - F5-TTS specific optimizations
+
+---
+
+## 🚀 Quick Start Guide
+
+### Daily Routine
 ```bash
+# 1. Check GPU is locked (CRITICAL!)
+sudo nvpmodel -q  # Should show "MAXN"
+sudo jetson_clocks  # Run if not locked
+
+# 2. Quick performance test
 cd /ssd/ishowtts
-cargo build --release -p ishowtts-backend
+/opt/miniforge3/envs/ishowtts/bin/python scripts/quick_performance_test.py
+# Expected: RTF < 0.30 (target), RTF < 0.25 (excellent)
+
+# 3. If performance degraded, troubleshoot:
+# - Check GPU locked (step 1)
+# - Check system load: htop
+# - Check Python optimizations: see MAINTENANCE_PLAN
+# - Check thermal throttling: nvidia-smi
 ```
 
-### 2. Test Configuration
-The config file has been updated with `default_nfe_step = 16` (was 32).
-Location: `config/ishowtts.toml`
-
-### 3. Run Benchmarks
+### Start Phase 2 Work
 ```bash
-# Start backend first
-./scripts/start_all.sh
+# Read the implementation plan
+cat .agent/PHASE2_IMPLEMENTATION_PLAN.md
 
-# In another terminal:
-./scripts/benchmark_tts.sh
+# Start with TensorRT research
+# 1. Check TensorRT version
+dpkg -l | grep tensorrt
 
-# Or test Python directly:
-python3 scripts/test_optimizations.py
+# 2. Study Vocos architecture
+# 3. Create ONNX export script (see PHASE2 plan)
+# 4. Follow step-by-step guide in PHASE2_IMPLEMENTATION_PLAN.md
 ```
 
-### 4. Monitor Performance
-```bash
-# Watch backend logs for timing info
-RUST_LOG=ishowtts=debug cargo run --release -p ishowtts-backend
-```
+---
 
-## Applied Optimizations
+## 📊 Performance History
+
+| Date | Session | RTF (Mean) | RTF (Best) | Speedup | Status |
+|------|---------|------------|------------|---------|--------|
+| 2025-09-30 | Late | **0.241** | **0.239** | 4.14x | ✅ Best |
+| 2025-09-30 | Morning | 0.278 | 0.274 | 3.59x | ✅ Good |
+| 2025-09-30 | Initial | 0.266 | 0.264 | 3.76x | ✅ Good |
+| Baseline | Before | 1.322 | - | 0.76x | ❌ Slow |
+
+**Improvement**: 5.5x faster than baseline (RTF 1.322 → 0.241)
+
+---
+
+## 🔧 Phase 1 Optimizations Applied ✅
 
 ### Python (F5-TTS)
+- ✅ torch.compile(mode='max-autotune') for model and vocoder
+- ✅ Automatic mixed precision (FP16 AMP)
 - ✅ Reference audio tensor caching
-- ✅ Automatic mixed precision (FP16)
-- ✅ Enhanced FP16 support for Jetson Orin
+- ✅ CUDA streams for async operations
+- ✅ GPU memory management
+- ✅ RMS variable bug fix (critical for torch.compile)
 
 ### Rust (TTS Engine)
 - ✅ Optimized WAV encoding (no Cursor overhead)
 - ✅ Fast linear resampling (f32, unsafe get_unchecked)
-- ✅ Configurable NFE steps (default 16)
+- ✅ Configurable NFE steps
 
 ### Configuration
-- ✅ Updated default_nfe_step from 32 to 16
+- ✅ NFE steps: 32 → 8 (critical for target achievement)
+- ✅ GPU frequency locking (jetson_clocks)
 
-## 📊 Performance Results
+### Test Scripts
+- ✅ quick_performance_test.py (NFE=8, 3 runs)
+- ✅ test_max_autotune.py (NFE=8, 5 runs)
+- ✅ test_nfe_performance.py (NFE comparison)
+- ✅ setup_performance_mode.sh (GPU locking)
 
-| Metric | Baseline | Optimized | Improvement |
-|--------|----------|-----------|-------------|
-| RTF | 1.322 | **0.266** | **5.0x faster** ✅ |
-| Speedup | 0.76x | **3.76x** | **Target achieved** ✅ |
-| NFE Steps | 32 | 8 | 4x fewer steps |
-| Synthesis Time | 15.0s | 2.2s | **6.8x faster** |
+---
 
-### Key Changes
-1. **torch.compile(mode='max-autotune')** - Changed from "reduce-overhead" (CRITICAL)
-2. **NFE=8** - Reduced from 32 (CRITICAL)
-3. **FP16 AMP on vocoder** - Extended autocast to vocoder (HIGH IMPACT)
-4. **RMS bug fix** - Fixed closure issue for torch.compile (CRITICAL enabler)
+## 🎯 Phase 2 Roadmap (Next Work)
 
-## 🚀 Testing
+### Priority 1: TensorRT Vocoder (HIGHEST IMPACT)
+**Timeline**: 2-3 weeks
+**Expected**: RTF 0.241 → 0.15-0.20 (35-40% faster)
 
-### Run Performance Tests
+**Steps**:
+1. Research & Preparation (2-3 days)
+2. ONNX Export (3-5 days)
+3. TensorRT Conversion (2-3 days)
+4. Python Integration (5-7 days)
+5. Testing & Validation (3-5 days)
+6. Documentation (1-2 days)
+
+**Detailed Plan**: See [PHASE2_IMPLEMENTATION_PLAN.md](PHASE2_IMPLEMENTATION_PLAN.md)
+
+### Priority 2: E2E Testing (1 week)
+- Basic TTS flow tests
+- Danmaku integration tests
+- Concurrent request tests
+- Performance regression tests
+
+### Priority 3: Batch Processing (1-2 weeks)
+- Queue batching in Rust
+- Batch inference in Python
+- Expected: 2-3x throughput improvement
+
+### Optional: INT8 Quantization (LOW PRIORITY)
+- Only if more speed needed
+- High risk (quality degradation)
+- Expected: Additional 20-30%
+
+---
+
+## ⚠️ Critical Reminders
+
+### GPU Frequency Lock (MUST DO AFTER REBOOT!)
 ```bash
-# Quick test with final configuration (NFE=8, max-autotune)
-/opt/miniforge3/envs/ishowtts/bin/python scripts/test_max_autotune.py
-
-# Comprehensive NFE comparison (8, 12, 16, 20, 24, 32)
-/opt/miniforge3/envs/ishowtts/bin/python scripts/test_nfe_performance.py
-
-# Quick validation
-/opt/miniforge3/envs/ishowtts/bin/python scripts/quick_performance_test.py
+sudo jetson_clocks
+sudo nvpmodel -m 0
 ```
 
-## 🎯 Future Optimizations (Optional)
+**Impact if not locked**:
+- Performance degrades to RTF ~0.35 (vs 0.24)
+- High variance (±16% vs ±2%)
+- Unpredictable latency
 
-For even more performance:
-1. **TensorRT Vocoder** - 2-3x additional speedup possible
-2. **INT8 Quantization** - 1.5-2x additional speedup
-3. **Batch Processing** - Better throughput for multiple requests
+### Python Optimizations Location (NOT IN GIT!)
+**Critical**: Python files are in third_party submodule, not tracked in git!
 
-Current performance (RTF=0.266) is sufficient for real-time livestream danmaku.
+**Optimized files**:
+```
+third_party/F5-TTS/src/f5_tts/api.py
+third_party/F5-TTS/src/f5_tts/infer/utils_infer.py
+```
 
-## Notes
+**Backups**:
+```
+.agent/backups/optimized_python_files/api.py.optimized
+.agent/backups/optimized_python_files/utils_infer.py.optimized
+```
 
-- Python changes in `third_party/F5-TTS` are not tracked in git (.gitignored)
-- Config changes in `config/` are not tracked in git (.gitignored)
-- All Rust optimizations are committed and pushed
-- Benchmark scripts are ready to use
+**To restore**:
+```bash
+cp .agent/backups/optimized_python_files/*.optimized third_party/F5-TTS/src/f5_tts/
+# Then rename files (remove .optimized extension)
+```
+
+### Configuration (NOT IN GIT!)
+**File**: `config/ishowtts.toml`
+**Critical setting**: `default_nfe_step = 8`
+
+---
+
+## 🧪 Testing Commands
+
+### Quick Test (30 seconds)
+```bash
+/opt/miniforge3/envs/ishowtts/bin/python scripts/quick_performance_test.py
+# Expected: RTF < 0.30 (target), RTF < 0.25 (excellent)
+```
+
+### Full Test (60 seconds)
+```bash
+/opt/miniforge3/envs/ishowtts/bin/python scripts/test_max_autotune.py
+# Expected: Mean RTF < 0.30, Best RTF < 0.25
+```
+
+### NFE Comparison (5 minutes)
+```bash
+/opt/miniforge3/envs/ishowtts/bin/python scripts/test_nfe_performance.py
+# Tests NFE=8,12,16,20,24,32 and compares performance
+```
+
+### Benchmark (Extended)
+```bash
+/opt/miniforge3/envs/ishowtts/bin/python scripts/benchmark_tts_performance.py
+# Comprehensive benchmark with multiple voice IDs
+```
+
+---
+
+## 📈 Success Metrics
+
+### Phase 1 (Current) ✅
+- [x] RTF < 0.30: **0.241** ✅
+- [x] Variance < 10%: **±2%** ✅
+- [x] Speedup > 2.8x: **4.14x** ✅
+- [x] Documentation complete ✅
+- [x] All optimizations tested ✅
+
+### Phase 2 (Targets)
+- [ ] RTF < 0.20 (with TensorRT vocoder)
+- [ ] Throughput > 10 req/min (with batching)
+- [ ] E2E tests passing
+- [ ] Performance regression tests in CI
+- [ ] Production monitoring setup
+
+---
+
+## 🐛 Troubleshooting
+
+### Performance Degraded (RTF > 0.35)
+1. **Check GPU lock**: `sudo jetson_clocks && sudo nvpmodel -m 0`
+2. **Check system load**: `htop` (should be < 6.0)
+3. **Check thermal**: `nvidia-smi` (temp < 85°C)
+4. **Restart backend**: `pkill ishowtts-backend && ./scripts/start_all.sh`
+5. **Verify Python optimizations**: Compare with backups
+
+### Test Script Errors
+1. **Wrong Python**: Use `/opt/miniforge3/envs/ishowtts/bin/python`
+2. **Missing dependencies**: `source /opt/miniforge3/envs/ishowtts/bin/activate && pip install -r requirements.txt`
+3. **CUDA errors**: Check GPU lock and thermal throttling
+
+### TTS Quality Issues
+1. **Check NFE**: Should be 8 (speed) or 16+ (quality)
+2. **Check reference audio**: Should be high-quality, >3s
+3. **Check text**: Chinese text needs proper encoding
+
+---
+
+## 📚 Additional Resources
+
+### Documentation
+- Main README: `../README.md`
+- Config examples: `../config/ishowtts.toml`
+- Scripts: `../scripts/`
+
+### Git Repository
+- Remote: https://github.com/2WalterW/ishowtts.git
+- Branch: main
+- Latest commits: See git log
+
+### External Resources
+- F5-TTS: https://github.com/SWivid/F5-TTS
+- TensorRT: https://docs.nvidia.com/deeplearning/tensorrt/
+- Jetson Orin: https://developer.nvidia.com/embedded/jetson-agx-orin
+
+---
+
+## 🎉 Summary
+
+**Phase 1**: ✅ **COMPLETE** (RTF=0.241, target achieved)
+**Phase 2**: 📋 **PLANNED** (TensorRT vocoder, target RTF<0.20)
+**Repository**: 🚀 **PRODUCTION READY**
+
+**Next Action**: Start Phase 2 - TensorRT Vocoder Integration
+**Read**: [PHASE2_IMPLEMENTATION_PLAN.md](PHASE2_IMPLEMENTATION_PLAN.md)
+
+---
+
+**Last Updated**: 2025-09-30 11:35 (UTC+8)
+**Agent**: Performance Optimization & Maintenance
+**Status**: Ready for Phase 2 Work
