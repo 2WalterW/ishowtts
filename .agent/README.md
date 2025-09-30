@@ -1,17 +1,27 @@
-# Agent Workspace
+# Agent Workspace - iShowTTS Optimization
 
 This directory contains optimization work, plans, and documentation for iShowTTS performance improvements.
 
-## Files
+## 🎯 Mission: Achieve Whisper-level TTS Speed (RTF < 0.3)
 
-### optimization_plan.md
-Comprehensive optimization plan identifying bottlenecks and strategies for performance improvement.
+**Status**: ✅ **COMPLETE** (2025-09-30)
+**Result**: RTF = 0.266 (Mean), 0.264 (Best) ✅
+**Speedup**: 3.76x real-time ✅
 
-### optimization_summary.md
-**[MAIN DOCUMENT]** Complete summary of all optimizations applied, expected performance improvements, testing instructions, and rollback procedures.
+## 📁 Key Documents
 
-### f5_tts_optimizations.md
-Detailed documentation of Python F5-TTS optimizations (tensor caching, mixed precision AMP).
+### Current Status
+- **[STATUS.md](STATUS.md)** - Quick status summary ⭐ READ THIS FIRST
+- **[FINAL_OPTIMIZATION_REPORT.md](FINAL_OPTIMIZATION_REPORT.md)** - Comprehensive optimization report
+
+### Historical Documents
+- **[OPTIMIZATION_COMPLETE.md](OPTIMIZATION_COMPLETE.md)** - Previous completion summary
+- **[optimizations_latest.md](optimizations_latest.md)** - Latest optimizations applied
+- **[python_optimizations_applied.md](python_optimizations_applied.md)** - Python-specific changes
+- **[optimization_summary.md](optimization_summary.md)** - Mid-project summary
+- **[optimization_roadmap.md](optimization_roadmap.md)** - Implementation roadmap
+- **[optimization_plan.md](optimization_plan.md)** - Initial optimization strategy
+- **[f5_tts_optimizations.md](f5_tts_optimizations.md)** - F5-TTS specific optimizations
 
 ## Quick Start
 
@@ -58,20 +68,43 @@ RUST_LOG=ishowtts=debug cargo run --release -p ishowtts-backend
 ### Configuration
 - ✅ Updated default_nfe_step from 32 to 16
 
-## Expected Results
+## 📊 Performance Results
 
-| Metric | Before | After | Improvement |
-|--------|--------|-------|-------------|
-| NFE Steps | 32 | 16 | 2x faster |
-| Synthesis Time | ~1.5s | ~0.5s | 3x faster |
-| RTF | 0.7-1.0 | <0.3 | 2.5-3x |
+| Metric | Baseline | Optimized | Improvement |
+|--------|----------|-----------|-------------|
+| RTF | 1.322 | **0.266** | **5.0x faster** ✅ |
+| Speedup | 0.76x | **3.76x** | **Target achieved** ✅ |
+| NFE Steps | 32 | 8 | 4x fewer steps |
+| Synthesis Time | 15.0s | 2.2s | **6.8x faster** |
 
-## Next Steps
+### Key Changes
+1. **torch.compile(mode='max-autotune')** - Changed from "reduce-overhead" (CRITICAL)
+2. **NFE=8** - Reduced from 32 (CRITICAL)
+3. **FP16 AMP on vocoder** - Extended autocast to vocoder (HIGH IMPACT)
+4. **RMS bug fix** - Fixed closure issue for torch.compile (CRITICAL enabler)
 
-1. **Test**: Run benchmarks to verify improvements
-2. **Quality Check**: A/B test audio quality
-3. **Tune**: Adjust NFE steps if needed (8-32 range)
-4. **Advanced**: Consider TensorRT vocoder for further speedup
+## 🚀 Testing
+
+### Run Performance Tests
+```bash
+# Quick test with final configuration (NFE=8, max-autotune)
+/opt/miniforge3/envs/ishowtts/bin/python scripts/test_max_autotune.py
+
+# Comprehensive NFE comparison (8, 12, 16, 20, 24, 32)
+/opt/miniforge3/envs/ishowtts/bin/python scripts/test_nfe_performance.py
+
+# Quick validation
+/opt/miniforge3/envs/ishowtts/bin/python scripts/quick_performance_test.py
+```
+
+## 🎯 Future Optimizations (Optional)
+
+For even more performance:
+1. **TensorRT Vocoder** - 2-3x additional speedup possible
+2. **INT8 Quantization** - 1.5-2x additional speedup
+3. **Batch Processing** - Better throughput for multiple requests
+
+Current performance (RTF=0.266) is sufficient for real-time livestream danmaku.
 
 ## Notes
 
