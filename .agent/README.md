@@ -5,14 +5,21 @@ This directory contains optimization work, plans, and documentation for iShowTTS
 ## 🎯 Mission: Achieve Whisper-level TTS Speed (RTF < 0.3)
 
 **Status**: ✅ **COMPLETE** (2025-09-30)
-**Result**: RTF = 0.266 (Mean), 0.264 (Best) ✅
-**Speedup**: 3.76x real-time ✅
+**Current Result**: RTF = 0.278 (Mean), 0.274 (Best) ✅
+**Speedup**: 3.59x real-time ✅
+**Phase**: Ready for Phase 2 optimizations (TensorRT, batching)
 
-## 📁 Key Documents
+## 📁 Key Documents (Priority Order)
 
-### Current Status
-- **[STATUS.md](STATUS.md)** - Quick status summary ⭐ READ THIS FIRST
-- **[FINAL_OPTIMIZATION_REPORT.md](FINAL_OPTIMIZATION_REPORT.md)** - Comprehensive optimization report
+### ⭐ START HERE
+1. **[MAINTENANCE_PLAN_2025_09_30.md](MAINTENANCE_PLAN_2025_09_30.md)** - Complete maintenance & optimization guide
+2. **[STATUS.md](STATUS.md)** - Quick status summary & metrics
+3. **[OPTIMIZATION_ROADMAP_NEXT.md](OPTIMIZATION_ROADMAP_NEXT.md)** - Phase 2 detailed plans
+
+### Current Status & Reports
+- **[SESSION_2025_09_30.md](SESSION_2025_09_30.md)** - Latest session summary
+- **[FINAL_OPTIMIZATION_REPORT.md](FINAL_OPTIMIZATION_REPORT.md)** - Complete Phase 1 report
+- **[CURRENT_STATUS_2025_09_30.md](CURRENT_STATUS_2025_09_30.md)** - Troubleshooting guide
 
 ### Historical Documents
 - **[OPTIMIZATION_COMPLETE.md](OPTIMIZATION_COMPLETE.md)** - Previous completion summary
