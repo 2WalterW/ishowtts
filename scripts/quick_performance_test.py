@@ -59,7 +59,7 @@ def quick_test():
             ref_file=str(ref_audio),
             ref_text=ref_text,
             gen_text=test_text,
-            nfe_step=16,
+            nfe_step=8,
             show_info=lambda x: None
         )
         warmup_time = time.perf_counter() - start
@@ -85,7 +85,7 @@ def quick_test():
                 ref_file=str(ref_audio),
                 ref_text=ref_text,
                 gen_text=test_text,
-                nfe_step=16,
+                nfe_step=8,
                 show_info=lambda x: None
             )
         except Exception as e:
