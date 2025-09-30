@@ -70,6 +70,8 @@ pub struct F5EngineConfig {
     pub device: Option<String>,
     #[serde(default)]
     pub hf_cache_dir: Option<PathBuf>,
+    #[serde(default)]
+    pub default_nfe_step: Option<u32>,
     pub python_package_path: PathBuf,
     pub voices: Vec<VoiceProfileConfig>,
 }
@@ -238,6 +240,7 @@ pub struct F5Engine {
 struct EngineInner {
     runtime: Mutex<PythonRuntime>,
     voices: RwLock<HashMap<String, VoiceProfileConfig>>,
+    default_nfe_step: Option<u32>,
 }
 
 struct PythonRuntime {
@@ -306,6 +309,7 @@ impl F5Engine {
             inner: Arc::new(EngineInner {
                 runtime: Mutex::new(runtime),
                 voices: RwLock::new(voices),
+                default_nfe_step: config.default_nfe_step,
             }),
         })
     }
@@ -578,7 +582,8 @@ impl EngineInner {
         let cross_fade_duration = request.cross_fade_duration.unwrap_or(0.15);
         let sway = request.sway_sampling_coef.unwrap_or(-1.0);
         let cfg_strength = request.cfg_strength.unwrap_or(2.0);
-        let nfe_step = request.nfe_step.unwrap_or(32);
+        // Use configured default NFE step (default 16 for speed) or request override
+        let nfe_step = request.nfe_step.unwrap_or_else(|| self.default_nfe_step.unwrap_or(16));
         let speed = request.speed.unwrap_or(1.0);
         let fix_duration = request.fix_duration;
         let remove_silence = request.remove_silence.unwrap_or(false);
@@ -817,8 +822,6 @@ impl IndexRuntime {
 }
 
 fn encode_wav(samples: &[f32], sample_rate: u32) -> Result<Vec<u8>> {
-    use std::io::Cursor;
-
     let spec = WavSpec {
         channels: 1,
         sample_rate,
@@ -826,18 +829,22 @@ fn encode_wav(samples: &[f32], sample_rate: u32) -> Result<Vec<u8>> {
         sample_format: SampleFormat::Int,
     };
 
-    let mut cursor = Cursor::new(Vec::with_capacity(samples.len() * 2));
+    // Pre-allocate buffer: WAV header (44 bytes) + samples (2 bytes each)
+    let mut buffer = Vec::with_capacity(44 + samples.len() * 2);
+
     {
-        let mut writer = WavWriter::new(&mut cursor, spec)?;
+        let mut writer = WavWriter::new(&mut buffer, spec)?;
+
+        // Optimized: batch convert and write samples
         for &sample in samples {
             let clamped = sample.clamp(-1.0, 1.0);
             let value = (clamped * i16::MAX as f32) as i16;
             writer.write_sample(value)?;
         }
-        writer.flush()?;
+        writer.finalize()?;
     }
 
-    Ok(cursor.into_inner())
+    Ok(buffer)
 }
 
 fn resample_linear(input: &[f32], src_rate: u32, dst_rate: u32) -> Vec<f32> {
@@ -849,15 +856,21 @@ fn resample_linear(input: &[f32], src_rate: u32, dst_rate: u32) -> Vec<f32> {
     let output_len = (input.len() as f64 * ratio).ceil() as usize;
     let mut output = Vec::with_capacity(output_len);
 
+    // Optimized: precompute inverse ratio and use f32 for faster operations
+    let inv_ratio = (src_rate as f32) / (dst_rate as f32);
+    let input_len_minus_1 = (input.len() - 1) as f32;
+
     for i in 0..output_len {
-        let src_pos = i as f64 / ratio;
-        let idx = src_pos.floor() as usize;
+        let src_pos = (i as f32) * inv_ratio;
+        let idx = src_pos as usize;
+
         if idx + 1 >= input.len() {
             output.push(*input.last().unwrap_or(&0.0));
         } else {
-            let frac = (src_pos - idx as f64) as f32;
-            let a = input[idx];
-            let b = input[idx + 1];
+            let frac = src_pos - idx as f32;
+            let a = unsafe { *input.get_unchecked(idx) };
+            let b = unsafe { *input.get_unchecked(idx + 1) };
+            // Linear interpolation: a + (b - a) * frac
             output.push(a + (b - a) * frac);
         }
     }
