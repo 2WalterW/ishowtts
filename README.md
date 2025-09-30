@@ -68,8 +68,9 @@ flowchart LR
 1. **Bootstrap** – `./scripts/bootstrap_python_env.sh`，再安装 Jetson 版 `torch/torchaudio`。
 2. **Assets** – `python -m f5_tts.download ...`；`snapshot_download('IndexTeam/IndexTTS-2', ...)`；准备声线并更新 `config/ishowtts.toml`。
 3. **Build** – `cargo install trunk --locked --force`；`cargo build -p ishowtts-backend -p ishowtts-frontend`。
-4. **Run** – `source /opt/miniforge3/envs/ishowtts/bin/activate`；`./scripts/start_all.sh --wait 900 --no-tail`；浏览器访问 `http://127.0.0.1:8080`。需要预热声线时，可改为 `cargo run -p ishowtts-backend -- --config config/ishowtts.toml --warmup` 再启动脚本。
-5. **Stop / Restart** – `Ctrl+C` 或 `pkill -f ishowtts-backend && pkill -f trunk`；下次直接重新运行脚本即可。
+4. **Performance Mode** (推荐) – `sudo ./scripts/setup_performance_mode.sh` 锁定 GPU 频率以获得最佳性能（RTF 0.278 vs 0.352）。每次重启后需重新运行。
+5. **Run** – `source /opt/miniforge3/envs/ishowtts/bin/activate`；`./scripts/start_all.sh --wait 900 --no-tail`；浏览器访问 `http://127.0.0.1:8080`。需要预热声线时，可改为 `cargo run -p ishowtts-backend -- --config config/ishowtts.toml --warmup` 再启动脚本。
+6. **Stop / Restart** – `Ctrl+C` 或 `pkill -f ishowtts-backend && pkill -f trunk`；下次直接重新运行脚本即可。
 
 ## Prerequisites
 
@@ -145,6 +146,20 @@ ctx_len = 256
 - 释放构建缓存：`cargo clean` 会移除 `target/`；Python 依赖驻留在 `/opt/miniforge3/envs/ishowtts` 或 `.venv`，如需重建请手动删除。
 - 模型缓存（F5、IndexTTS、HF assets）分别位于 `data/cache/huggingface/` 与 `third_party/index-tts/checkpoints/`，可视余量迁移或清理。FST 会写入 `third_party/index-tts/indextts/utils/tagger_cache/`。
 - 更新依赖或本仓库后，重新运行 `./scripts/bootstrap_python_env.sh` 与 `cargo build -p ishowtts-backend` 以确保环境一致。
+
+## Performance optimization
+
+**Current status**: RTF = 0.278 (mean), 0.274 (best) ✅ Target: <0.30
+
+实现 Whisper 级别 TTS 速度的关键优化：
+- ✅ **torch.compile(mode='max-autotune')** – 模型和声码器 JIT 编译优化
+- ✅ **FP16 自动混合精度** – 利用 Jetson Orin Tensor Cores 加速
+- ✅ **参考音频张量缓存** – 避免重复预处理
+- ✅ **CUDA 流异步传输** – CPU/GPU 操作并行
+- ✅ **NFE=8 步优化** – 速度/质量平衡（config 可调）
+- ✅ **GPU 频率锁定** – `setup_performance_mode.sh` 提供稳定性能
+
+详细优化报告见 `.agent/FINAL_OPTIMIZATION_REPORT.md` 和 `.agent/STATUS.md`。
 
 ## Recent updates
 
