@@ -15,15 +15,15 @@
 **Phase 2 Result**: **RTF = 0.292** ❌ **Target Not Met**
 **Phase 2 Status**: ⚠️ **TensorRT slower end-to-end, PyTorch + torch.compile is faster**
 
-### Performance Metrics (Latest - 2025-09-30, BEST CONFIG)
+### Performance Metrics (Latest - 2025-09-30 12:22, GPU LOCKED)
 
-- **Best RTF**: 0.251 ✅ (target < 0.3)
-- **Mean RTF**: 0.297 ✅
-- **Best Speedup**: 3.98x ✅ (target > 3.3x)
-- **Mean Speedup**: 3.37x ✅
-- **Synthesis Time**: 2.1s for 8.4s audio
-- **Overall Improvement**: 5.3x faster than baseline (RTF 1.32)
-- **Variance**: ±8% (acceptable)
+- **Best RTF**: 0.233 ✅ (target < 0.3) **NEW RECORD**
+- **Mean RTF**: 0.250 ✅
+- **Best Speedup**: 4.29x ✅ (target > 3.3x)
+- **Mean Speedup**: 3.99x ✅
+- **Synthesis Time**: 1.95s for 8.37s audio
+- **Overall Improvement**: 5.7x faster than baseline (RTF 1.32)
+- **Variance**: ±3.7% (excellent stability)
 
 ### Performance Metrics (Previous Best - 2025-09-30)
 
@@ -180,20 +180,23 @@ Add to startup script or run manually for best performance.
 
 ## 🎉 Summary
 
-✅ **Phase 1 Target Achieved**: RTF < 0.3 → **0.251** (Best)
+✅ **Phase 1 Target EXCEEDED**: RTF < 0.3 → **0.233** (Best) **NEW RECORD**
 ❌ **Phase 2 Target NOT Met**: RTF < 0.2 → **0.292** (TensorRT E2E slower)
-✅ **5.3x Total Speedup**: From baseline RTF=1.32 to RTF=0.251
+✅ **5.7x Total Speedup**: From baseline RTF=1.32 to RTF=0.233 **IMPROVED**
 ⚠️ **TensorRT Vocoder**: 1.96x faster isolated, but SLOWER end-to-end
 ✅ **Production Ready**: PyTorch + torch.compile (Phase 1 config)
 ✅ **Excellent Quality**: Good quality at NFE=8
 ✅ **Fully Documented**: Complete optimization reports + investigation
 ✅ **Code Committed**: All changes including TensorRT integration
-✅ **Consistent Performance**: ±8% variance with GPU locked
-✅ **Comprehensive Test Suite**: 30+ tests (unit + integration) **NEW**
-✅ **Automated Regression Detection**: Daily monitoring ready **NEW**
-✅ **Phase 3 Roadmap**: INT8 quantization, streaming, batching **NEW**
+✅ **Excellent Stability**: ±3.7% variance with GPU locked **IMPROVED**
+✅ **Comprehensive Test Suite**: 30+ tests (unit + integration)
+✅ **Automated Regression Detection**: Daily monitoring ready
+✅ **Phase 3 Roadmap**: INT8 quantization, streaming, batching
+✅ **Performance Analysis**: Detailed bottleneck analysis complete **NEW**
+⚠️ **Critical Finding**: NFE config difference (API default=32 vs backend=8) **NEW**
 
 **Recommendation**: Use Phase 1 config (PyTorch + torch.compile), NOT TensorRT
 
-**Phase 1 Complete & Production Ready!** 🚀✅
+**Phase 1 Complete & EXCEEDED Target!** 🚀✅✅
 **Phase 3 Infrastructure Ready!** 🧪✅
+**Latest Analysis: .agent/PERFORMANCE_ANALYSIS_2025_09_30.md** 📊✅
