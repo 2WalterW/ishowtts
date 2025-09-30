@@ -1,315 +1,0 @@
-/opt/miniforge3/envs/ishowtts/lib/python3.10/site-packages/pydub/utils.py:170: RuntimeWarning: Couldn't find ffmpeg or avconv - defaulting to ffmpeg, but may not work
-  warn("Couldn't find ffmpeg or avconv - defaulting to ffmpeg, but may not work", RuntimeWarning)
-[0;93m2025-09-30 13:16:08.104513710 [W:onnxruntime:Default, device_discovery.cc:164 DiscoverDevicesForPlatform] GPU device discovery failed: device_discovery.cc:89 ReadFileContents Failed to open file: "/sys/class/drm/card1/device/vendor"[m
-/opt/miniforge3/envs/ishowtts/lib/python3.10/site-packages/jieba/_compat.py:18: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
-  import pkg_resources
-======================================================================
-Extended Performance Test (20+ runs)
-======================================================================
-
-PyTorch: 2.5.0a0+872d972e41.nv24.08
-CUDA available: True
-CUDA device: Orin
-CUDA version: 12.6
-
-[Initializing Model]
-Download Vocos from huggingface charactr/vocos-mel-24khz
-
-vocab :  /ssd/ishowtts/third_party/F5-TTS/src/f5_tts/infer/examples/vocab.txt
-token :  custom
-model :  data/cache/huggingface/models--SWivid--F5-TTS/snapshots/84e5a410d9cead4de2f847e7c9369a6440bdfaca/F5TTS_v1_Base/model_1250000.safetensors
-
-[F5TTS] torch.compile(mode='max-autotune') enabled for model (PyTorch 2.5.0a0+872d972e41.nv24.08)
-[F5TTS] torch.compile(mode='max-autotune') enabled for vocoder
-Initialization time: 5.84s
-
-[Warmup - 3 runs]
-Converting audio...
-Audio is over 12s, clipping short. (2)
-Using custom reference text...
-
-ref_text   No, you clearly don't know who you're talking to, so let me clue you in. I am not in danger, Skyler. I am the danger. A guy opens his door and gets shot, and you think that of me? No, I am. 
-gen_text 0 Hello world, this is a quick test of the optimized TTS system.
-
-
-  0%|          | 0/1 [00:00<?, ?it/s][0;93m2025-09-30 13:16:19.641707980 [W:onnxruntime:Default, device_discovery.cc:164 DiscoverDevicesForPlatform] GPU device discovery failed: device_discovery.cc:89 ReadFileContents Failed to open file: "/sys/class/drm/card1/device/vendor"[m
-/opt/miniforge3/envs/ishowtts/lib/python3.10/site-packages/vocos/heads.py:67: UserWarning: ComplexHalf support is experimental and many operators don't support it yet. (Triggered internally at /opt/pytorch/pytorch/aten/src/ATen/EmptyTensor.cpp:46.)
-  S = mag * (x + 1j * y)
-100%|██████████| 1/1 [00:02<00:00,  2.79s/it]100%|██████████| 1/1 [00:02<00:00,  2.79s/it]
-Warmup 1: 2.884s | Audio: 3.584s
-Converting audio...
-Using cached preprocessed reference audio...
-Using custom reference text...
-
-ref_text   No, you clearly don't know who you're talking to, so let me clue you in. I am not in danger, Skyler. I am the danger. A guy opens his door and gets shot, and you think that of me? No, I am. 
-gen_text 0 Hello world, this is a quick test of the optimized TTS system.
-
-
-  0%|          | 0/1 [00:00<?, ?it/s]100%|██████████| 1/1 [00:01<00:00,  1.62s/it]100%|██████████| 1/1 [00:01<00:00,  1.62s/it]
-Warmup 2: 1.626s | Audio: 3.584s
-Converting audio...
-Using cached preprocessed reference audio...
-Using custom reference text...
-
-ref_text   No, you clearly don't know who you're talking to, so let me clue you in. I am not in danger, Skyler. I am the danger. A guy opens his door and gets shot, and you think that of me? No, I am. 
-gen_text 0 Hello world, this is a quick test of the optimized TTS system.
-
-
-  0%|          | 0/1 [00:00<?, ?it/s]100%|██████████| 1/1 [00:01<00:00,  1.26s/it]100%|██████████| 1/1 [00:01<00:00,  1.26s/it]
-Warmup 3: 1.265s | Audio: 3.584s
-
-[Performance Test - 20 runs]
-Converting audio...
-Using cached preprocessed reference audio...
-Using custom reference text...
-
-ref_text   No, you clearly don't know who you're talking to, so let me clue you in. I am not in danger, Skyler. I am the danger. A guy opens his door and gets shot, and you think that of me? No, I am. 
-gen_text 0 Hello world, this is a quick test of the optimized TTS system.
-
-
-  0%|          | 0/1 [00:00<?, ?it/s]100%|██████████| 1/1 [00:01<00:00,  1.82s/it]100%|██████████| 1/1 [00:01<00:00,  1.82s/it]
-Run  1: 1.830s | Audio: 3.584s | RTF: 0.510 | Speedup: 1.96x
-Converting audio...
-Using cached preprocessed reference audio...
-Using custom reference text...
-
-ref_text   No, you clearly don't know who you're talking to, so let me clue you in. I am not in danger, Skyler. I am the danger. A guy opens his door and gets shot, and you think that of me? No, I am. 
-gen_text 0 Hello world, this is a quick test of the optimized TTS system.
-
-
-  0%|          | 0/1 [00:00<?, ?it/s]100%|██████████| 1/1 [00:01<00:00,  1.63s/it]100%|██████████| 1/1 [00:01<00:00,  1.63s/it]
-Run  2: 1.635s | Audio: 3.584s | RTF: 0.456 | Speedup: 2.19x
-Converting audio...
-Using cached preprocessed reference audio...
-Using custom reference text...
-
-ref_text   No, you clearly don't know who you're talking to, so let me clue you in. I am not in danger, Skyler. I am the danger. A guy opens his door and gets shot, and you think that of me? No, I am. 
-gen_text 0 Hello world, this is a quick test of the optimized TTS system.
-
-
-  0%|          | 0/1 [00:00<?, ?it/s]100%|██████████| 1/1 [00:01<00:00,  1.30s/it]100%|██████████| 1/1 [00:01<00:00,  1.30s/it]
-Run  3: 1.309s | Audio: 3.584s | RTF: 0.365 | Speedup: 2.74x
-Converting audio...
-Using cached preprocessed reference audio...
-Using custom reference text...
-
-ref_text   No, you clearly don't know who you're talking to, so let me clue you in. I am not in danger, Skyler. I am the danger. A guy opens his door and gets shot, and you think that of me? No, I am. 
-gen_text 0 Hello world, this is a quick test of the optimized TTS system.
-
-
-  0%|          | 0/1 [00:00<?, ?it/s]100%|██████████| 1/1 [00:01<00:00,  1.26s/it]100%|██████████| 1/1 [00:01<00:00,  1.26s/it]
-Run  4: 1.272s | Audio: 3.584s | RTF: 0.355 | Speedup: 2.82x
-Converting audio...
-Using cached preprocessed reference audio...
-Using custom reference text...
-
-ref_text   No, you clearly don't know who you're talking to, so let me clue you in. I am not in danger, Skyler. I am the danger. A guy opens his door and gets shot, and you think that of me? No, I am. 
-gen_text 0 Hello world, this is a quick test of the optimized TTS system.
-
-
-  0%|          | 0/1 [00:00<?, ?it/s]100%|██████████| 1/1 [00:01<00:00,  1.28s/it]100%|██████████| 1/1 [00:01<00:00,  1.28s/it]
-Run  5: 1.288s | Audio: 3.584s | RTF: 0.359 | Speedup: 2.78x
-Converting audio...
-Using cached preprocessed reference audio...
-Using custom reference text...
-
-ref_text   No, you clearly don't know who you're talking to, so let me clue you in. I am not in danger, Skyler. I am the danger. A guy opens his door and gets shot, and you think that of me? No, I am. 
-gen_text 0 Hello world, this is a quick test of the optimized TTS system.
-
-
-  0%|          | 0/1 [00:00<?, ?it/s]100%|██████████| 1/1 [00:01<00:00,  1.27s/it]100%|██████████| 1/1 [00:01<00:00,  1.27s/it]
-Run  6: 1.276s | Audio: 3.584s | RTF: 0.356 | Speedup: 2.81x
-Converting audio...
-Using cached preprocessed reference audio...
-Using custom reference text...
-
-ref_text   No, you clearly don't know who you're talking to, so let me clue you in. I am not in danger, Skyler. I am the danger. A guy opens his door and gets shot, and you think that of me? No, I am. 
-gen_text 0 Hello world, this is a quick test of the optimized TTS system.
-
-
-  0%|          | 0/1 [00:00<?, ?it/s]100%|██████████| 1/1 [00:01<00:00,  1.27s/it]100%|██████████| 1/1 [00:01<00:00,  1.27s/it]
-Run  7: 1.281s | Audio: 3.584s | RTF: 0.357 | Speedup: 2.80x
-Converting audio...
-Using cached preprocessed reference audio...
-Using custom reference text...
-
-ref_text   No, you clearly don't know who you're talking to, so let me clue you in. I am not in danger, Skyler. I am the danger. A guy opens his door and gets shot, and you think that of me? No, I am. 
-gen_text 0 Hello world, this is a quick test of the optimized TTS system.
-
-
-  0%|          | 0/1 [00:00<?, ?it/s]100%|██████████| 1/1 [00:01<00:00,  1.27s/it]100%|██████████| 1/1 [00:01<00:00,  1.27s/it]
-Run  8: 1.275s | Audio: 3.584s | RTF: 0.356 | Speedup: 2.81x
-Converting audio...
-Using cached preprocessed reference audio...
-Using custom reference text...
-
-ref_text   No, you clearly don't know who you're talking to, so let me clue you in. I am not in danger, Skyler. I am the danger. A guy opens his door and gets shot, and you think that of me? No, I am. 
-gen_text 0 Hello world, this is a quick test of the optimized TTS system.
-
-
-  0%|          | 0/1 [00:00<?, ?it/s]100%|██████████| 1/1 [00:01<00:00,  1.29s/it]100%|██████████| 1/1 [00:01<00:00,  1.29s/it]
-Run  9: 1.293s | Audio: 3.584s | RTF: 0.361 | Speedup: 2.77x
-Converting audio...
-Using cached preprocessed reference audio...
-Using custom reference text...
-
-ref_text   No, you clearly don't know who you're talking to, so let me clue you in. I am not in danger, Skyler. I am the danger. A guy opens his door and gets shot, and you think that of me? No, I am. 
-gen_text 0 Hello world, this is a quick test of the optimized TTS system.
-
-
-  0%|          | 0/1 [00:00<?, ?it/s]100%|██████████| 1/1 [00:01<00:00,  1.64s/it]100%|██████████| 1/1 [00:01<00:00,  1.64s/it]
-Run 10: 1.645s | Audio: 3.584s | RTF: 0.459 | Speedup: 2.18x
-Converting audio...
-Using cached preprocessed reference audio...
-Using custom reference text...
-
-ref_text   No, you clearly don't know who you're talking to, so let me clue you in. I am not in danger, Skyler. I am the danger. A guy opens his door and gets shot, and you think that of me? No, I am. 
-gen_text 0 Hello world, this is a quick test of the optimized TTS system.
-
-
-  0%|          | 0/1 [00:00<?, ?it/s]100%|██████████| 1/1 [00:01<00:00,  1.71s/it]100%|██████████| 1/1 [00:01<00:00,  1.71s/it]
-Run 11: 1.715s | Audio: 3.584s | RTF: 0.478 | Speedup: 2.09x
-Converting audio...
-Using cached preprocessed reference audio...
-Using custom reference text...
-
-ref_text   No, you clearly don't know who you're talking to, so let me clue you in. I am not in danger, Skyler. I am the danger. A guy opens his door and gets shot, and you think that of me? No, I am. 
-gen_text 0 Hello world, this is a quick test of the optimized TTS system.
-
-
-  0%|          | 0/1 [00:00<?, ?it/s]100%|██████████| 1/1 [00:01<00:00,  1.57s/it]100%|██████████| 1/1 [00:01<00:00,  1.57s/it]
-Run 12: 1.582s | Audio: 3.584s | RTF: 0.441 | Speedup: 2.27x
-Converting audio...
-Using cached preprocessed reference audio...
-Using custom reference text...
-
-ref_text   No, you clearly don't know who you're talking to, so let me clue you in. I am not in danger, Skyler. I am the danger. A guy opens his door and gets shot, and you think that of me? No, I am. 
-gen_text 0 Hello world, this is a quick test of the optimized TTS system.
-
-
-  0%|          | 0/1 [00:00<?, ?it/s]100%|██████████| 1/1 [00:01<00:00,  1.65s/it]100%|██████████| 1/1 [00:01<00:00,  1.65s/it]
-Run 13: 1.652s | Audio: 3.584s | RTF: 0.461 | Speedup: 2.17x
-Converting audio...
-Using cached preprocessed reference audio...
-Using custom reference text...
-
-ref_text   No, you clearly don't know who you're talking to, so let me clue you in. I am not in danger, Skyler. I am the danger. A guy opens his door and gets shot, and you think that of me? No, I am. 
-gen_text 0 Hello world, this is a quick test of the optimized TTS system.
-
-
-  0%|          | 0/1 [00:00<?, ?it/s]100%|██████████| 1/1 [00:01<00:00,  1.28s/it]100%|██████████| 1/1 [00:01<00:00,  1.28s/it]
-Run 14: 1.287s | Audio: 3.584s | RTF: 0.359 | Speedup: 2.78x
-Converting audio...
-Using cached preprocessed reference audio...
-Using custom reference text...
-
-ref_text   No, you clearly don't know who you're talking to, so let me clue you in. I am not in danger, Skyler. I am the danger. A guy opens his door and gets shot, and you think that of me? No, I am. 
-gen_text 0 Hello world, this is a quick test of the optimized TTS system.
-
-
-  0%|          | 0/1 [00:00<?, ?it/s]100%|██████████| 1/1 [00:01<00:00,  1.30s/it]100%|██████████| 1/1 [00:01<00:00,  1.30s/it]
-Run 15: 1.305s | Audio: 3.584s | RTF: 0.364 | Speedup: 2.75x
-Converting audio...
-Using cached preprocessed reference audio...
-Using custom reference text...
-
-ref_text   No, you clearly don't know who you're talking to, so let me clue you in. I am not in danger, Skyler. I am the danger. A guy opens his door and gets shot, and you think that of me? No, I am. 
-gen_text 0 Hello world, this is a quick test of the optimized TTS system.
-
-
-  0%|          | 0/1 [00:00<?, ?it/s]100%|██████████| 1/1 [00:01<00:00,  1.27s/it]100%|██████████| 1/1 [00:01<00:00,  1.27s/it]
-Run 16: 1.280s | Audio: 3.584s | RTF: 0.357 | Speedup: 2.80x
-Converting audio...
-Using cached preprocessed reference audio...
-Using custom reference text...
-
-ref_text   No, you clearly don't know who you're talking to, so let me clue you in. I am not in danger, Skyler. I am the danger. A guy opens his door and gets shot, and you think that of me? No, I am. 
-gen_text 0 Hello world, this is a quick test of the optimized TTS system.
-
-
-  0%|          | 0/1 [00:00<?, ?it/s]100%|██████████| 1/1 [00:01<00:00,  1.26s/it]100%|██████████| 1/1 [00:01<00:00,  1.26s/it]
-Run 17: 1.273s | Audio: 3.584s | RTF: 0.355 | Speedup: 2.82x
-Converting audio...
-Using cached preprocessed reference audio...
-Using custom reference text...
-
-ref_text   No, you clearly don't know who you're talking to, so let me clue you in. I am not in danger, Skyler. I am the danger. A guy opens his door and gets shot, and you think that of me? No, I am. 
-gen_text 0 Hello world, this is a quick test of the optimized TTS system.
-
-
-  0%|          | 0/1 [00:00<?, ?it/s]100%|██████████| 1/1 [00:01<00:00,  1.29s/it]100%|██████████| 1/1 [00:01<00:00,  1.29s/it]
-Run 18: 1.301s | Audio: 3.584s | RTF: 0.363 | Speedup: 2.75x
-Converting audio...
-Using cached preprocessed reference audio...
-Using custom reference text...
-
-ref_text   No, you clearly don't know who you're talking to, so let me clue you in. I am not in danger, Skyler. I am the danger. A guy opens his door and gets shot, and you think that of me? No, I am. 
-gen_text 0 Hello world, this is a quick test of the optimized TTS system.
-
-
-  0%|          | 0/1 [00:00<?, ?it/s]100%|██████████| 1/1 [00:01<00:00,  1.28s/it]100%|██████████| 1/1 [00:01<00:00,  1.28s/it]
-Run 19: 1.287s | Audio: 3.584s | RTF: 0.359 | Speedup: 2.78x
-Converting audio...
-Using cached preprocessed reference audio...
-Using custom reference text...
-
-ref_text   No, you clearly don't know who you're talking to, so let me clue you in. I am not in danger, Skyler. I am the danger. A guy opens his door and gets shot, and you think that of me? No, I am. 
-gen_text 0 Hello world, this is a quick test of the optimized TTS system.
-
-
-  0%|          | 0/1 [00:00<?, ?it/s]100%|██████████| 1/1 [00:01<00:00,  1.29s/it]100%|██████████| 1/1 [00:01<00:00,  1.29s/it]
-Run 20: 1.294s | Audio: 3.584s | RTF: 0.361 | Speedup: 2.77x
-
-======================================================================
-STATISTICS
-======================================================================
-Audio Duration: 3.584s (mean)
-
-Synthesis Time:
-  Mean:   1.404s
-  Median: 1.294s
-  Min:    1.272s
-  Max:    1.830s
-  StdDev: 0.188s
-  CV:     13.4%
-
-Real-Time Factor (RTF):
-  Mean:   0.392
-  Median: 0.361
-  Min:    0.355 (best)
-  Max:    0.510 (worst)
-  StdDev: 0.053
-  CV:     13.4%
-
-Speedup:
-  Mean:   2.59x
-  Max:    2.82x (best)
-  Min:    1.96x (worst)
-
-======================================================================
-EVALUATION
-======================================================================
-❌ Phase 1 Target (RTF < 0.3): NOT MET
-⚠️  Phase 3 Target (RTF < 0.2): NOT MET (current: 0.392)
-⚠️  Variance (CV < 20%): ACCEPTABLE (13.4%)
-
-======================================================================
-RECOMMENDATIONS
-======================================================================
-- Need 48.9% improvement to reach Phase 3 target (RTF < 0.2)
-- Current: RTF=0.392, Target: RTF=0.200
-
-Suggested optimizations:
-  1. Test NFE=6 (expected 14% speedup)
-  2. Enable IndexTTS FP16 for faster fallback
-  3. Implement batch processing for multiple requests
-  4. Profile to find remaining bottlenecks
-
-Variance reduction suggestions:
-  1. Verify GPU frequency is locked (jetson_clocks)
-  2. Reduce background processes
-  3. Test with more warmup iterations
-  4. Check thermal throttling
-
-======================================================================
-Results saved to: .agent/performance_results_extended.txt

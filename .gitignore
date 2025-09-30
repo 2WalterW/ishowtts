@@ -142,9 +142,20 @@ node_modules/
 third_party/*/.git
 third_party/*/
 
+# Agent documentation (cleanup)
+.agent/*.md
+.agent/*.txt
+!.agent/backups/
+!.agent/*.patch
+
+# Temporary logs
+/tmp/
+*.log.backup
+
 # Keep important documentation and small assets
 !README.md
 !LICENSE
 !.gitignore
 !Cargo.toml
 !*/Cargo.toml
+!OPTIMIZATION_SUMMARY.md

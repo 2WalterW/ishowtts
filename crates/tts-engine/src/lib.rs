@@ -833,7 +833,8 @@ fn encode_wav(samples: &[f32], sample_rate: u32) -> Result<Vec<u8>> {
     let mut buffer = Vec::with_capacity(44 + samples.len() * 2);
 
     {
-        let mut writer = WavWriter::new(&mut buffer, spec)?;
+        let mut cursor = std::io::Cursor::new(&mut buffer);
+        let mut writer = WavWriter::new(&mut cursor, spec)?;
 
         // Optimized: batch convert and write samples
         for &sample in samples {

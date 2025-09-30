@@ -37,7 +37,7 @@ fi
 
 # Allow the caller to layer additional PATH entries (e.g. cargo install bin dir).
 export PATH="$HOME/.cargo/bin:$PATH"
-export F5_TTS_QUIET=${F5_TTS_QUIET:-1}
+export F5_TTS_QUIET=${F5_TTS_QUIET:-0}  # Temporarily set to 0 for debugging
 
 # Fix protobuf compatibility issue on Jetson
 export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
@@ -54,12 +54,12 @@ if [[ -n "${OPENFST_ROOT:-}" ]]; then
   export C_INCLUDE_PATH="$OPENFST_ROOT/include:${C_INCLUDE_PATH:-}"
 fi
 
-BIN="$REPO_DIR/target/debug/ishowtts-backend"
+BIN="$REPO_DIR/target/release/ishowtts-backend"
 
 if [[ ! -x "$BIN" ]]; then
-  echo "Building backend binary (debug profile)..."
-  (cd "$REPO_DIR" && cargo build -p ishowtts-backend)
-  BIN="$REPO_DIR/target/debug/ishowtts-backend"
+  echo "Building backend binary (release profile)..."
+  (cd "$REPO_DIR" && cargo build -p ishowtts-backend --release)
+  BIN="$REPO_DIR/target/release/ishowtts-backend"
 fi
 
 echo "Starting iShowTTS backend..."
