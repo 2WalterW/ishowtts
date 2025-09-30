@@ -44,7 +44,7 @@ def quick_test():
     # Initialize model
     print("\n[Initializing Model]")
     start = time.perf_counter()
-    model = F5TTS(model_type="F5-TTS", device="cuda" if torch.cuda.is_available() else "cpu")
+    model = F5TTS(model="F5TTS_v1_Base", device="cuda" if torch.cuda.is_available() else "cpu")
     init_time = time.perf_counter() - start
     print(f"Initialization time: {init_time:.2f}s")
 
