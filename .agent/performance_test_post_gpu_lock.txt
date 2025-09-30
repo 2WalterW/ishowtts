@@ -1,0 +1,327 @@
+/opt/miniforge3/envs/ishowtts/lib/python3.10/site-packages/pydub/utils.py:170: RuntimeWarning: Couldn't find ffmpeg or avconv - defaulting to ffmpeg, but may not work
+  warn("Couldn't find ffmpeg or avconv - defaulting to ffmpeg, but may not work", RuntimeWarning)
+[0;93m2025-09-30 13:30:54.052449898 [W:onnxruntime:Default, device_discovery.cc:164 DiscoverDevicesForPlatform] GPU device discovery failed: device_discovery.cc:89 ReadFileContents Failed to open file: "/sys/class/drm/card1/device/vendor"[m
+/opt/miniforge3/envs/ishowtts/lib/python3.10/site-packages/jieba/_compat.py:18: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+======================================================================
+Extended Performance Test (20+ runs)
+======================================================================
+
+PyTorch: 2.5.0a0+872d972e41.nv24.08
+CUDA available: True
+CUDA device: Orin
+CUDA version: 12.6
+
+[Initializing Model]
+Download Vocos from huggingface charactr/vocos-mel-24khz
+
+vocab :  /ssd/ishowtts/third_party/F5-TTS/src/f5_tts/infer/examples/vocab.txt
+token :  custom
+model :  data/cache/huggingface/models--SWivid--F5-TTS/snapshots/84e5a410d9cead4de2f847e7c9369a6440bdfaca/F5TTS_v1_Base/model_1250000.safetensors
+
+[F5TTS] torch.compile(mode='max-autotune') enabled for model (PyTorch 2.5.0a0+872d972e41.nv24.08)
+[F5TTS] torch.compile(mode='max-autotune') enabled for vocoder
+Initialization time: 6.59s
+
+[Warmup - 3 runs]
+Converting audio...
+Audio is over 12s, clipping short. (2)
+Using custom reference text...
+
+ref_text   No, you clearly don't know who you're talking to, so let me clue you in. 
+gen_text 0 Hello world,
+gen_text 1 this is a quick test of the optimized TTS system with additional text to match the longer audio duration used in the quick performance test for more accurate RTF measurements.
+
+
+  0%|          | 0/2 [00:00<?, ?it/s][0;93m2025-09-30 13:31:06.372421911 [W:onnxruntime:Default, device_discovery.cc:164 DiscoverDevicesForPlatform] GPU device discovery failed: device_discovery.cc:89 ReadFileContents Failed to open file: "/sys/class/drm/card1/device/vendor"[m
+/opt/miniforge3/envs/ishowtts/lib/python3.10/site-packages/vocos/heads.py:67: UserWarning: ComplexHalf support is experimental and many operators don't support it yet. (Triggered internally at /opt/pytorch/pytorch/aten/src/ATen/EmptyTensor.cpp:46.)
+  S = mag * (x + 1j * y)
+ 50%|█████     | 1/2 [00:02<00:02,  2.71s/it]100%|██████████| 2/2 [00:06<00:00,  3.16s/it]100%|██████████| 2/2 [00:06<00:00,  3.09s/it]
+Warmup 1: 6.270s | Audio: 27.829s
+Converting audio...
+Using cached preprocessed reference audio...
+Using custom reference text...
+
+ref_text   No, you clearly don't know who you're talking to, so let me clue you in. 
+gen_text 0 Hello world,
+gen_text 1 this is a quick test of the optimized TTS system with additional text to match the longer audio duration used in the quick performance test for more accurate RTF measurements.
+
+
+  0%|          | 0/2 [00:00<?, ?it/s] 50%|█████     | 1/2 [00:01<00:01,  1.13s/it]100%|██████████| 2/2 [00:04<00:00,  2.49s/it]100%|██████████| 2/2 [00:04<00:00,  2.29s/it]
+Warmup 2: 4.587s | Audio: 27.829s
+Converting audio...
+Using cached preprocessed reference audio...
+Using custom reference text...
+
+ref_text   No, you clearly don't know who you're talking to, so let me clue you in. 
+gen_text 0 Hello world,
+gen_text 1 this is a quick test of the optimized TTS system with additional text to match the longer audio duration used in the quick performance test for more accurate RTF measurements.
+
+
+  0%|          | 0/2 [00:00<?, ?it/s] 50%|█████     | 1/2 [00:01<00:01,  1.14s/it]100%|██████████| 2/2 [00:04<00:00,  2.51s/it]100%|██████████| 2/2 [00:04<00:00,  2.30s/it]
+Warmup 3: 4.609s | Audio: 27.829s
+
+[Performance Test - 20 runs]
+Converting audio...
+Using cached preprocessed reference audio...
+Using custom reference text...
+
+ref_text   No, you clearly don't know who you're talking to, so let me clue you in. 
+gen_text 0 Hello world,
+gen_text 1 this is a quick test of the optimized TTS system with additional text to match the longer audio duration used in the quick performance test for more accurate RTF measurements.
+
+
+  0%|          | 0/2 [00:00<?, ?it/s] 50%|█████     | 1/2 [00:01<00:01,  1.12s/it]100%|██████████| 2/2 [00:04<00:00,  2.50s/it]100%|██████████| 2/2 [00:04<00:00,  2.29s/it]
+Run  1: 4.596s | Audio: 27.829s | RTF: 0.165 | Speedup: 6.06x
+Converting audio...
+Using cached preprocessed reference audio...
+Using custom reference text...
+
+ref_text   No, you clearly don't know who you're talking to, so let me clue you in. 
+gen_text 0 Hello world,
+gen_text 1 this is a quick test of the optimized TTS system with additional text to match the longer audio duration used in the quick performance test for more accurate RTF measurements.
+
+
+  0%|          | 0/2 [00:00<?, ?it/s] 50%|█████     | 1/2 [00:01<00:01,  1.14s/it]100%|██████████| 2/2 [00:04<00:00,  2.50s/it]100%|██████████| 2/2 [00:04<00:00,  2.29s/it]
+Run  2: 4.594s | Audio: 27.829s | RTF: 0.165 | Speedup: 6.06x
+Converting audio...
+Using cached preprocessed reference audio...
+Using custom reference text...
+
+ref_text   No, you clearly don't know who you're talking to, so let me clue you in. 
+gen_text 0 Hello world,
+gen_text 1 this is a quick test of the optimized TTS system with additional text to match the longer audio duration used in the quick performance test for more accurate RTF measurements.
+
+
+  0%|          | 0/2 [00:00<?, ?it/s] 50%|█████     | 1/2 [00:01<00:01,  1.14s/it]100%|██████████| 2/2 [00:04<00:00,  2.51s/it]100%|██████████| 2/2 [00:04<00:00,  2.30s/it]
+Run  3: 4.613s | Audio: 27.829s | RTF: 0.166 | Speedup: 6.03x
+Converting audio...
+Using cached preprocessed reference audio...
+Using custom reference text...
+
+ref_text   No, you clearly don't know who you're talking to, so let me clue you in. 
+gen_text 0 Hello world,
+gen_text 1 this is a quick test of the optimized TTS system with additional text to match the longer audio duration used in the quick performance test for more accurate RTF measurements.
+
+
+  0%|          | 0/2 [00:00<?, ?it/s] 50%|█████     | 1/2 [00:01<00:01,  1.14s/it]100%|██████████| 2/2 [00:04<00:00,  2.51s/it]100%|██████████| 2/2 [00:04<00:00,  2.31s/it]
+Run  4: 4.618s | Audio: 27.829s | RTF: 0.166 | Speedup: 6.03x
+Converting audio...
+Using cached preprocessed reference audio...
+Using custom reference text...
+
+ref_text   No, you clearly don't know who you're talking to, so let me clue you in. 
+gen_text 0 Hello world,
+gen_text 1 this is a quick test of the optimized TTS system with additional text to match the longer audio duration used in the quick performance test for more accurate RTF measurements.
+
+
+  0%|          | 0/2 [00:00<?, ?it/s] 50%|█████     | 1/2 [00:01<00:01,  1.15s/it]100%|██████████| 2/2 [00:04<00:00,  2.51s/it]100%|██████████| 2/2 [00:04<00:00,  2.30s/it]
+Run  5: 4.611s | Audio: 27.829s | RTF: 0.166 | Speedup: 6.04x
+Converting audio...
+Using cached preprocessed reference audio...
+Using custom reference text...
+
+ref_text   No, you clearly don't know who you're talking to, so let me clue you in. 
+gen_text 0 Hello world,
+gen_text 1 this is a quick test of the optimized TTS system with additional text to match the longer audio duration used in the quick performance test for more accurate RTF measurements.
+
+
+  0%|          | 0/2 [00:00<?, ?it/s] 50%|█████     | 1/2 [00:01<00:01,  1.13s/it]100%|██████████| 2/2 [00:04<00:00,  2.52s/it]100%|██████████| 2/2 [00:04<00:00,  2.31s/it]
+Run  6: 4.632s | Audio: 27.829s | RTF: 0.166 | Speedup: 6.01x
+Converting audio...
+Using cached preprocessed reference audio...
+Using custom reference text...
+
+ref_text   No, you clearly don't know who you're talking to, so let me clue you in. 
+gen_text 0 Hello world,
+gen_text 1 this is a quick test of the optimized TTS system with additional text to match the longer audio duration used in the quick performance test for more accurate RTF measurements.
+
+
+  0%|          | 0/2 [00:00<?, ?it/s] 50%|█████     | 1/2 [00:01<00:01,  1.15s/it]100%|██████████| 2/2 [00:05<00:00,  2.76s/it]100%|██████████| 2/2 [00:05<00:00,  2.51s/it]
+Run  7: 5.038s | Audio: 27.829s | RTF: 0.181 | Speedup: 5.52x
+Converting audio...
+Using cached preprocessed reference audio...
+Using custom reference text...
+
+ref_text   No, you clearly don't know who you're talking to, so let me clue you in. 
+gen_text 0 Hello world,
+gen_text 1 this is a quick test of the optimized TTS system with additional text to match the longer audio duration used in the quick performance test for more accurate RTF measurements.
+
+
+  0%|          | 0/2 [00:00<?, ?it/s] 50%|█████     | 1/2 [00:01<00:01,  1.46s/it]100%|██████████| 2/2 [00:05<00:00,  3.08s/it]100%|██████████| 2/2 [00:05<00:00,  2.84s/it]
+Run  8: 5.682s | Audio: 27.829s | RTF: 0.204 | Speedup: 4.90x
+Converting audio...
+Using cached preprocessed reference audio...
+Using custom reference text...
+
+ref_text   No, you clearly don't know who you're talking to, so let me clue you in. 
+gen_text 0 Hello world,
+gen_text 1 this is a quick test of the optimized TTS system with additional text to match the longer audio duration used in the quick performance test for more accurate RTF measurements.
+
+
+  0%|          | 0/2 [00:00<?, ?it/s] 50%|█████     | 1/2 [00:01<00:01,  1.15s/it]100%|██████████| 2/2 [00:04<00:00,  2.53s/it]100%|██████████| 2/2 [00:04<00:00,  2.32s/it]
+Run  9: 4.656s | Audio: 27.829s | RTF: 0.167 | Speedup: 5.98x
+Converting audio...
+Using cached preprocessed reference audio...
+Using custom reference text...
+
+ref_text   No, you clearly don't know who you're talking to, so let me clue you in. 
+gen_text 0 Hello world,
+gen_text 1 this is a quick test of the optimized TTS system with additional text to match the longer audio duration used in the quick performance test for more accurate RTF measurements.
+
+
+  0%|          | 0/2 [00:00<?, ?it/s] 50%|█████     | 1/2 [00:01<00:01,  1.16s/it]100%|██████████| 2/2 [00:04<00:00,  2.53s/it]100%|██████████| 2/2 [00:04<00:00,  2.32s/it]
+Run 10: 4.658s | Audio: 27.829s | RTF: 0.167 | Speedup: 5.97x
+Converting audio...
+Using cached preprocessed reference audio...
+Using custom reference text...
+
+ref_text   No, you clearly don't know who you're talking to, so let me clue you in. 
+gen_text 0 Hello world,
+gen_text 1 this is a quick test of the optimized TTS system with additional text to match the longer audio duration used in the quick performance test for more accurate RTF measurements.
+
+
+  0%|          | 0/2 [00:00<?, ?it/s] 50%|█████     | 1/2 [00:01<00:01,  1.16s/it]100%|██████████| 2/2 [00:04<00:00,  2.50s/it]100%|██████████| 2/2 [00:04<00:00,  2.30s/it]
+Run 11: 4.613s | Audio: 27.829s | RTF: 0.166 | Speedup: 6.03x
+Converting audio...
+Using cached preprocessed reference audio...
+Using custom reference text...
+
+ref_text   No, you clearly don't know who you're talking to, so let me clue you in. 
+gen_text 0 Hello world,
+gen_text 1 this is a quick test of the optimized TTS system with additional text to match the longer audio duration used in the quick performance test for more accurate RTF measurements.
+
+
+  0%|          | 0/2 [00:00<?, ?it/s] 50%|█████     | 1/2 [00:01<00:01,  1.15s/it]100%|██████████| 2/2 [00:04<00:00,  2.51s/it]100%|██████████| 2/2 [00:04<00:00,  2.30s/it]
+Run 12: 4.617s | Audio: 27.829s | RTF: 0.166 | Speedup: 6.03x
+Converting audio...
+Using cached preprocessed reference audio...
+Using custom reference text...
+
+ref_text   No, you clearly don't know who you're talking to, so let me clue you in. 
+gen_text 0 Hello world,
+gen_text 1 this is a quick test of the optimized TTS system with additional text to match the longer audio duration used in the quick performance test for more accurate RTF measurements.
+
+
+  0%|          | 0/2 [00:00<?, ?it/s] 50%|█████     | 1/2 [00:01<00:01,  1.12s/it]100%|██████████| 2/2 [00:04<00:00,  2.50s/it]100%|██████████| 2/2 [00:04<00:00,  2.29s/it]
+Run 13: 4.587s | Audio: 27.829s | RTF: 0.165 | Speedup: 6.07x
+Converting audio...
+Using cached preprocessed reference audio...
+Using custom reference text...
+
+ref_text   No, you clearly don't know who you're talking to, so let me clue you in. 
+gen_text 0 Hello world,
+gen_text 1 this is a quick test of the optimized TTS system with additional text to match the longer audio duration used in the quick performance test for more accurate RTF measurements.
+
+
+  0%|          | 0/2 [00:00<?, ?it/s] 50%|█████     | 1/2 [00:01<00:01,  1.15s/it]100%|██████████| 2/2 [00:04<00:00,  2.51s/it]100%|██████████| 2/2 [00:04<00:00,  2.30s/it]
+Run 14: 4.614s | Audio: 27.829s | RTF: 0.166 | Speedup: 6.03x
+Converting audio...
+Using cached preprocessed reference audio...
+Using custom reference text...
+
+ref_text   No, you clearly don't know who you're talking to, so let me clue you in. 
+gen_text 0 Hello world,
+gen_text 1 this is a quick test of the optimized TTS system with additional text to match the longer audio duration used in the quick performance test for more accurate RTF measurements.
+
+
+  0%|          | 0/2 [00:00<?, ?it/s] 50%|█████     | 1/2 [00:01<00:01,  1.15s/it]100%|██████████| 2/2 [00:04<00:00,  2.68s/it]100%|██████████| 2/2 [00:04<00:00,  2.45s/it]
+Run 15: 4.907s | Audio: 27.829s | RTF: 0.176 | Speedup: 5.67x
+Converting audio...
+Using cached preprocessed reference audio...
+Using custom reference text...
+
+ref_text   No, you clearly don't know who you're talking to, so let me clue you in. 
+gen_text 0 Hello world,
+gen_text 1 this is a quick test of the optimized TTS system with additional text to match the longer audio duration used in the quick performance test for more accurate RTF measurements.
+
+
+  0%|          | 0/2 [00:00<?, ?it/s] 50%|█████     | 1/2 [00:01<00:01,  1.20s/it]100%|██████████| 2/2 [00:05<00:00,  3.18s/it]100%|██████████| 2/2 [00:05<00:00,  2.89s/it]
+Run 16: 5.783s | Audio: 27.829s | RTF: 0.208 | Speedup: 4.81x
+Converting audio...
+Using cached preprocessed reference audio...
+Using custom reference text...
+
+ref_text   No, you clearly don't know who you're talking to, so let me clue you in. 
+gen_text 0 Hello world,
+gen_text 1 this is a quick test of the optimized TTS system with additional text to match the longer audio duration used in the quick performance test for more accurate RTF measurements.
+
+
+  0%|          | 0/2 [00:00<?, ?it/s] 50%|█████     | 1/2 [00:01<00:01,  1.14s/it]100%|██████████| 2/2 [00:04<00:00,  2.50s/it]100%|██████████| 2/2 [00:04<00:00,  2.29s/it]
+Run 17: 4.594s | Audio: 27.829s | RTF: 0.165 | Speedup: 6.06x
+Converting audio...
+Using cached preprocessed reference audio...
+Using custom reference text...
+
+ref_text   No, you clearly don't know who you're talking to, so let me clue you in. 
+gen_text 0 Hello world,
+gen_text 1 this is a quick test of the optimized TTS system with additional text to match the longer audio duration used in the quick performance test for more accurate RTF measurements.
+
+
+  0%|          | 0/2 [00:00<?, ?it/s] 50%|█████     | 1/2 [00:01<00:01,  1.14s/it]100%|██████████| 2/2 [00:04<00:00,  2.51s/it]100%|██████████| 2/2 [00:04<00:00,  2.30s/it]
+Run 18: 4.612s | Audio: 27.829s | RTF: 0.166 | Speedup: 6.03x
+Converting audio...
+Using cached preprocessed reference audio...
+Using custom reference text...
+
+ref_text   No, you clearly don't know who you're talking to, so let me clue you in. 
+gen_text 0 Hello world,
+gen_text 1 this is a quick test of the optimized TTS system with additional text to match the longer audio duration used in the quick performance test for more accurate RTF measurements.
+
+
+  0%|          | 0/2 [00:00<?, ?it/s] 50%|█████     | 1/2 [00:01<00:01,  1.14s/it]100%|██████████| 2/2 [00:04<00:00,  2.51s/it]100%|██████████| 2/2 [00:04<00:00,  2.30s/it]
+Run 19: 4.613s | Audio: 27.829s | RTF: 0.166 | Speedup: 6.03x
+Converting audio...
+Using cached preprocessed reference audio...
+Using custom reference text...
+
+ref_text   No, you clearly don't know who you're talking to, so let me clue you in. 
+gen_text 0 Hello world,
+gen_text 1 this is a quick test of the optimized TTS system with additional text to match the longer audio duration used in the quick performance test for more accurate RTF measurements.
+
+
+  0%|          | 0/2 [00:00<?, ?it/s] 50%|█████     | 1/2 [00:01<00:01,  1.15s/it]100%|██████████| 2/2 [00:04<00:00,  2.51s/it]100%|██████████| 2/2 [00:04<00:00,  2.30s/it]
+Run 20: 4.617s | Audio: 27.829s | RTF: 0.166 | Speedup: 6.03x
+
+======================================================================
+STATISTICS
+======================================================================
+Audio Duration: 27.829s (mean)
+
+Synthesis Time:
+  Mean:   4.763s
+  Median: 4.615s
+  Min:    4.587s
+  Max:    5.783s
+  StdDev: 0.351s
+  CV:     7.4%
+
+Real-Time Factor (RTF):
+  Mean:   0.171
+  Median: 0.166
+  Min:    0.165 (best)
+  Max:    0.208 (worst)
+  StdDev: 0.013
+  CV:     7.4%
+
+Speedup:
+  Mean:   5.87x
+  Max:    6.07x (best)
+  Min:    4.81x (worst)
+
+======================================================================
+EVALUATION
+======================================================================
+✅ Phase 1 Target (RTF < 0.3): ACHIEVED
+✅ Phase 3 Target (RTF < 0.2): ACHIEVED
+✅ Variance (CV < 10%): EXCELLENT (7.4%)
+
+======================================================================
+RECOMMENDATIONS
+======================================================================
+✅ All performance targets achieved!
+✅ RTF=0.171 (target: <0.2)
+✅ Variance=7.4% (target: <10%)
+
+======================================================================
+Results saved to: .agent/performance_results_extended.txt
