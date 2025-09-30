@@ -1,0 +1,180 @@
+NFE=6 Quality Evaluation
+======================================================================
+
+Evaluator: _______________
+Date: _______________
+
+Rating Scale:
+5 = Excellent, 4 = Good, 3 = Acceptable, 2 = Poor, 1 = Unacceptable
+
+----------------------------------------------------------------------
+
+Test: short_1
+Text: Hello world!
+NFE=7: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+NFE=6: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+Notes: _________________________________________________
+
+Test: short_2
+Text: How are you doing today?
+NFE=7: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+NFE=6: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+Notes: _________________________________________________
+
+Test: short_3
+Text: This is a test.
+NFE=7: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+NFE=6: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+Notes: _________________________________________________
+
+Test: short_4
+Text: Thanks for watching!
+NFE=7: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+NFE=6: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+Notes: _________________________________________________
+
+Test: short_5
+Text: See you next time!
+NFE=7: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+NFE=6: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+Notes: _________________________________________________
+
+Test: medium_1
+Text: The quick brown fox jumps over the lazy dog.
+NFE=7: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+NFE=6: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+Notes: _________________________________________________
+
+Test: medium_2
+Text: Machine learning is transforming the world of technology.
+NFE=7: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+NFE=6: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+Notes: _________________________________________________
+
+Test: medium_3
+Text: Welcome to the livestream, thanks for joining us today!
+NFE=7: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+NFE=6: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+Notes: _________________________________________________
+
+Test: medium_4
+Text: Please subscribe and hit the notification bell.
+NFE=7: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+NFE=6: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+Notes: _________________________________________________
+
+Test: medium_5
+Text: Let me know what you think in the comments below.
+NFE=7: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+NFE=6: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+Notes: _________________________________________________
+
+Test: long_1
+Text: In the field of artificial intelligence and machine learning, we are witnessing rapid advancements that are reshaping our future.
+NFE=7: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+NFE=6: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+Notes: _________________________________________________
+
+Test: long_2
+Text: Text to speech technology has come a long way in recent years, and now we can generate natural sounding voices in real time.
+NFE=7: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+NFE=6: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+Notes: _________________________________________________
+
+Test: long_3
+Text: The optimization process involved multiple iterations and careful tuning to achieve the best balance between speed and quality.
+NFE=7: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+NFE=6: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+Notes: _________________________________________________
+
+Test: tech_1
+Text: The model achieved an RTF of 0.213 with NFE equals 7.
+NFE=7: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+NFE=6: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+Notes: _________________________________________________
+
+Test: tech_2
+Text: Version 2.5.0 includes PyTorch CUDA optimization.
+NFE=7: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+NFE=6: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+Notes: _________________________________________________
+
+Test: tech_3
+Text: GPU utilization reached 85% during peak load.
+NFE=7: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+NFE=6: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+Notes: _________________________________________________
+
+Test: emotion_1
+Text: Wow, that's absolutely amazing!
+NFE=7: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+NFE=6: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+Notes: _________________________________________________
+
+Test: emotion_2
+Text: I'm sorry to hear that happened.
+NFE=7: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+NFE=6: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+Notes: _________________________________________________
+
+Test: emotion_3
+Text: Congratulations on your success!
+NFE=7: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+NFE=6: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+Notes: _________________________________________________
+
+Test: emotion_4
+Text: Oh no, that's terrible!
+NFE=7: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+NFE=6: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+Notes: _________________________________________________
+
+Test: emotion_5
+Text: Yes! We did it! Great job everyone!
+NFE=7: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+NFE=6: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+Notes: _________________________________________________
+
+Test: stream_1
+Text: Welcome raider! Thanks for the raid!
+NFE=7: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+NFE=6: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+Notes: _________________________________________________
+
+Test: stream_2
+Text: Let's check out this new game mode.
+NFE=7: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+NFE=6: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+Notes: _________________________________________________
+
+Test: stream_3
+Text: What should we do next? Let me know in chat.
+NFE=7: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+NFE=6: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+Notes: _________________________________________________
+
+Test: stream_4
+Text: That was clutch! Nice play!
+NFE=7: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+NFE=6: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+Notes: _________________________________________________
+
+Test: stream_5
+Text: GG everyone, that was a great match!
+NFE=7: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+NFE=6: Naturalness __ | Clarity __ | Artifacts (Y/N) __ | Prosody __
+Notes: _________________________________________________
+
+----------------------------------------------------------------------
+
+Overall Assessment:
+
+Quality difference noticeable? (Y/N) __
+NFE=6 acceptable for production? (Y/N) __
+Accept 14% speedup for this quality? (Y/N) __
+
+Final Decision: ACCEPT / REJECT NFE=6
+
+Recommendation:
+_________________________________________________________________
+_________________________________________________________________
