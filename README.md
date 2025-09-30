@@ -149,15 +149,21 @@ ctx_len = 256
 
 ## Performance optimization
 
-**Current status**: RTF = 0.278 (mean), 0.274 (best) ✅ Target: <0.30
+**Current status**: RTF = 0.169 (mean), 0.165 (best) ✅✅✅ Target: <0.20 **EXCEEDED!**
 
-实现 Whisper 级别 TTS 速度的关键优化：
+实现 Whisper 级别 TTS 速度的关键优化（Phase 3 完成）：
 - ✅ **torch.compile(mode='max-autotune')** – 模型和声码器 JIT 编译优化
 - ✅ **FP16 自动混合精度** – 利用 Jetson Orin Tensor Cores 加速
 - ✅ **参考音频张量缓存** – 避免重复预处理
 - ✅ **CUDA 流异步传输** – CPU/GPU 操作并行
-- ✅ **NFE=8 步优化** – 速度/质量平衡（config 可调）
-- ✅ **GPU 频率锁定** – `setup_performance_mode.sh` 提供稳定性能
+- ✅ **NFE=7 步优化** – 速度/质量最佳平衡（config 可调）
+- ✅ **GPU 频率锁定** – `sudo jetson_clocks` 提供稳定性能（每次重启后需运行）
+
+**性能指标** (20 runs, 27.8s audio):
+- RTF: 0.169 (mean), 0.165 (best), 0.193 (worst)
+- 加速: 5.92x (mean), 6.08x (best)
+- 稳定性: ±5.6% 方差
+- 总改进: 7.8x faster than baseline
 
 详细优化报告见 `.agent/FINAL_OPTIMIZATION_REPORT.md` 和 `.agent/STATUS.md`。
 
