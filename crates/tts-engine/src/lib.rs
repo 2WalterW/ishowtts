@@ -1,16 +1,21 @@
-use std::str::FromStr;
 use std::{
     collections::{HashMap, HashSet},
     ffi::OsString,
+    hash::{Hash, Hasher},
+    num::NonZeroUsize,
     path::{Path, PathBuf},
     sync::Arc,
 };
+
+use std::collections::hash_map::DefaultHasher;
+use std::str::FromStr;
 
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
 use base64::engine::general_purpose::STANDARD as BASE64;
 use base64::Engine as _;
 use hound::{SampleFormat, WavSpec, WavWriter};
+use lru::LruCache;
 use numpy::{PyArray1, PyArray2, PyArrayMethods, PyReadonlyArray1, PyReadonlyArray2};
 use once_cell::sync::Lazy;
 use parking_lot::{Mutex, RwLock};
@@ -23,7 +28,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map as JsonMap, Value as JsonValue};
 use thiserror::Error;
 use tokio::task;
-use tracing::{info, instrument};
+use tracing::{debug, info, instrument};
 use uuid::Uuid;
 
 static PYTHONPATH_LOCK: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
@@ -256,6 +261,8 @@ pub struct IndexTtsEngine {
 struct IndexEngineInner {
     runtime: Mutex<IndexRuntime>,
     voices: RwLock<HashMap<String, IndexVoice>>,
+    audio_cache: Mutex<LruCache<AudioCacheKey, AudioCacheEntry>>,
+    cache_epoch: u64,
 }
 
 struct IndexRuntime {
@@ -272,7 +279,25 @@ struct IndexVoice {
     emo_text: Option<String>,
     emo_alpha: Option<f32>,
     engine_label: Option<String>,
+    version: u64,
 }
+
+#[derive(Clone)]
+struct AudioCacheEntry {
+    audio_base64: Arc<String>,
+    sample_rate: u32,
+    waveform_len: usize,
+}
+
+#[derive(Clone, Hash, Eq, PartialEq)]
+struct AudioCacheKey {
+    epoch: u64,
+    voice_id: Arc<str>,
+    voice_version: u64,
+    text_hash: u64,
+}
+
+const AUDIO_CACHE_CAPACITY: usize = 512;
 
 impl F5Engine {
     pub fn new(config: F5EngineConfig) -> Result<Self> {
@@ -406,6 +431,7 @@ impl IndexTtsEngine {
                 emo_text: voice.emo_text.clone(),
                 emo_alpha: voice.emo_alpha,
                 engine_label: voice.engine_label.clone(),
+                version: 0,
             };
 
             if voices.insert(entry.id.clone(), entry).is_some() {
@@ -450,6 +476,10 @@ impl IndexTtsEngine {
             inner: Arc::new(IndexEngineInner {
                 runtime: Mutex::new(runtime),
                 voices: RwLock::new(voices),
+                audio_cache: Mutex::new(LruCache::new(
+                    NonZeroUsize::new(AUDIO_CACHE_CAPACITY).expect("cache capacity must be > 0"),
+                )),
+                cache_epoch: 0,
             }),
         })
     }
@@ -541,22 +571,27 @@ impl TtsEngine for IndexTtsEngine {
     }
 
     fn apply_override(&self, voice_id: &str, update: VoiceOverrideUpdate) -> Result<()> {
-        let mut voices = self.inner.voices.write();
-        let entry = voices
-            .get_mut(voice_id)
-            .ok_or_else(|| anyhow!("IndexTTS voice '{}' not found", voice_id))?;
+        {
+            let mut voices = self.inner.voices.write();
+            let entry = voices
+                .get_mut(voice_id)
+                .ok_or_else(|| anyhow!("IndexTTS voice '{}' not found", voice_id))?;
 
-        if let Some(audio) = update.reference_audio {
-            let canonical = audio.canonicalize().with_context(|| {
-                format!("failed to canonicalize override audio for voice {voice_id}")
-            })?;
-            entry.reference_audio = canonical;
+            if let Some(audio) = update.reference_audio {
+                let canonical = audio.canonicalize().with_context(|| {
+                    format!("failed to canonicalize override audio for voice {voice_id}")
+                })?;
+                entry.reference_audio = canonical;
+            }
+
+            if let Some(text) = update.reference_text {
+                entry.reference_text = Some(text);
+            }
+
+            entry.version = entry.version.wrapping_add(1);
         }
 
-        if let Some(text) = update.reference_text {
-            entry.reference_text = Some(text);
-        }
-
+        self.inner.invalidate_voice_cache(voice_id);
         Ok(())
     }
 
@@ -705,6 +740,7 @@ impl PythonRuntime {
 
 impl IndexEngineInner {
     fn synthesize_blocking(&self, request: TtsRequest) -> Result<TtsResponse> {
+        let chars = request.text.chars().count();
         let voice = {
             let voices = self.voices.read();
             voices
@@ -713,11 +749,48 @@ impl IndexEngineInner {
                 .ok_or_else(|| anyhow!("IndexTTS voice '{}' not found", request.voice_id))?
         };
 
+        let normalized_text = normalize_text_for_cache(&request.text);
+        let cache_key = normalized_text
+            .as_ref()
+            .filter(|_| can_cache_request(&request))
+            .map(|text| {
+                let text_hash = hash_text(text);
+                AudioCacheKey::new(self.cache_epoch, &voice, text_hash)
+            });
+
+        if let Some(ref key) = cache_key {
+            let mut cache = self.audio_cache.lock();
+            if let Some(entry) = cache.get(key).cloned() {
+                drop(cache);
+                let response = TtsResponse {
+                    request_id: Uuid::new_v4(),
+                    sample_rate: entry.sample_rate,
+                    audio_base64: (*entry.audio_base64).clone(),
+                    waveform_len: entry.waveform_len,
+                    voice_id: voice.id.clone(),
+                    engine: EngineKind::IndexTts,
+                    engine_label: voice
+                        .engine_label
+                        .clone()
+                        .unwrap_or_else(|| EngineKind::IndexTts.as_str().to_string()),
+                };
+                info!(
+                    target = "ishowtts::tts_engine",
+                    engine = %EngineKind::IndexTts.as_str(),
+                    voice = %voice.id,
+                    chars,
+                    audio_cache_hit = true,
+                    "indextts audio cache hit"
+                );
+                return Ok(response);
+            }
+        }
+
         let mut runtime = self.runtime.lock();
         let (mut samples, mut sample_rate, timings) = runtime.run_infer(&voice, &request.text)?;
+        drop(runtime);
 
         if let Some(ref stats) = timings {
-            let chars = request.text.chars().count();
             let segment_count = stats
                 .get("segment_count")
                 .and_then(JsonValue::as_u64)
@@ -735,6 +808,7 @@ impl IndexEngineInner {
                 .and_then(JsonValue::as_f64)
                 .unwrap_or_default();
 
+            let audio_cache_stored = cache_key.is_some();
             info!(
                 target = "ishowtts::tts_engine",
                 engine = %EngineKind::IndexTts.as_str(),
@@ -743,6 +817,8 @@ impl IndexEngineInner {
                 segment_count,
                 cache_hit,
                 emo_cache_hit,
+                audio_cache_hit = false,
+                audio_cache_stored,
                 total_ms,
                 timings = %stats,
                 "indextts synthesis timings"
@@ -761,6 +837,16 @@ impl IndexEngineInner {
         let wav_bytes = encode_wav(&samples, sample_rate)?;
         let encoded = BASE64.encode(&wav_bytes);
 
+        if let Some(ref key) = cache_key {
+            let entry = AudioCacheEntry {
+                audio_base64: Arc::new(encoded.clone()),
+                sample_rate,
+                waveform_len: samples.len(),
+            };
+            let mut cache = self.audio_cache.lock();
+            cache.put(key.clone(), entry);
+        }
+
         Ok(TtsResponse {
             request_id: Uuid::new_v4(),
             sample_rate,
@@ -773,6 +859,32 @@ impl IndexEngineInner {
                 .clone()
                 .unwrap_or_else(|| EngineKind::IndexTts.as_str().to_string()),
         })
+    }
+
+    fn invalidate_voice_cache(&self, voice_id: &str) {
+        let mut cache = self.audio_cache.lock();
+        let keys: Vec<_> = cache
+            .iter()
+            .filter_map(|(key, _)| {
+                if key.voice_id.as_ref() == voice_id {
+                    Some(key.clone())
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        for key in &keys {
+            cache.pop(key);
+        }
+
+        debug!(
+            target = "ishowtts::tts_engine",
+            engine = %EngineKind::IndexTts.as_str(),
+            voice = voice_id,
+            removed = keys.len(),
+            "invalidated cached clips for voice"
+        );
     }
 }
 
@@ -928,6 +1040,17 @@ fn py_any_to_json(value: &PyAny) -> Result<JsonValue> {
     Ok(JsonValue::String(text))
 }
 
+impl AudioCacheKey {
+    fn new(epoch: u64, voice: &IndexVoice, text_hash: u64) -> Self {
+        Self {
+            epoch,
+            voice_id: Arc::<str>::from(voice.id.as_str()),
+            voice_version: voice.version,
+            text_hash,
+        }
+    }
+}
+
 fn encode_wav(samples: &[f32], sample_rate: u32) -> Result<Vec<u8>> {
     let spec = WavSpec {
         channels: 1,
@@ -1001,6 +1124,42 @@ fn trim_trailing_silence(samples: &[f32], threshold: f32) -> Vec<f32> {
     }
 
     samples[..end].to_vec()
+}
+
+fn normalize_text_for_cache(text: &str) -> Option<String> {
+    let normalized = text.trim();
+    if normalized.is_empty() {
+        None
+    } else {
+        Some(normalized.to_owned())
+    }
+}
+
+fn hash_text(text: &str) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    text.hash(&mut hasher);
+    hasher.finish()
+}
+
+fn float_matches(option: Option<f32>, default: f32) -> bool {
+    option
+        .map(|value| (value - default).abs() <= f32::EPSILON.max(1e-6))
+        .unwrap_or(true)
+}
+
+fn can_cache_request(request: &TtsRequest) -> bool {
+    float_matches(request.speed, 1.0)
+        && float_matches(request.target_rms, 0.1)
+        && float_matches(request.cross_fade_duration, 0.15)
+        && float_matches(request.sway_sampling_coef, -1.0)
+        && float_matches(request.cfg_strength, 2.0)
+        && match request.nfe_step {
+            None => true,
+            Some(step) => step == 16,
+        }
+        && request.fix_duration.is_none()
+        && !request.remove_silence.unwrap_or(false)
+        && request.seed.is_none()
 }
 
 #[cfg(test)]
