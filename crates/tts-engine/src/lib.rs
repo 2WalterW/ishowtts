@@ -16,10 +16,11 @@ use once_cell::sync::Lazy;
 use parking_lot::{Mutex, RwLock};
 use pyo3::{
     prelude::PyAnyMethods,
-    types::{PyDict, PyModule},
+    types::{PyDict, PyList, PyModule, PyTuple},
     IntoPy, Py, PyAny, PyResult, Python,
 };
 use serde::{Deserialize, Serialize};
+use serde_json::{Map as JsonMap, Value as JsonValue};
 use thiserror::Error;
 use tokio::task;
 use tracing::{info, instrument};
@@ -583,7 +584,9 @@ impl EngineInner {
         let sway = request.sway_sampling_coef.unwrap_or(-1.0);
         let cfg_strength = request.cfg_strength.unwrap_or(2.0);
         // Use configured default NFE step (default 16 for speed) or request override
-        let nfe_step = request.nfe_step.unwrap_or_else(|| self.default_nfe_step.unwrap_or(16));
+        let nfe_step = request
+            .nfe_step
+            .unwrap_or_else(|| self.default_nfe_step.unwrap_or(16));
         let speed = request.speed.unwrap_or(1.0);
         let fix_duration = request.fix_duration;
         let remove_silence = request.remove_silence.unwrap_or(false);
@@ -711,7 +714,40 @@ impl IndexEngineInner {
         };
 
         let mut runtime = self.runtime.lock();
-        let (mut samples, mut sample_rate) = runtime.run_infer(&voice, &request.text)?;
+        let (mut samples, mut sample_rate, timings) = runtime.run_infer(&voice, &request.text)?;
+
+        if let Some(ref stats) = timings {
+            let chars = request.text.chars().count();
+            let segment_count = stats
+                .get("segment_count")
+                .and_then(JsonValue::as_u64)
+                .unwrap_or(0);
+            let cache_hit = stats
+                .get("cache_hit")
+                .and_then(JsonValue::as_bool)
+                .unwrap_or(false);
+            let emo_cache_hit = stats
+                .get("emo_cache_hit")
+                .and_then(JsonValue::as_bool)
+                .unwrap_or(false);
+            let total_ms = stats
+                .get("total_ms")
+                .and_then(JsonValue::as_f64)
+                .unwrap_or_default();
+
+            info!(
+                target = "ishowtts::tts_engine",
+                engine = %EngineKind::IndexTts.as_str(),
+                voice = %voice.id,
+                chars,
+                segment_count,
+                cache_hit,
+                emo_cache_hit,
+                total_ms,
+                timings = %stats,
+                "indextts synthesis timings"
+            );
+        }
 
         if sample_rate != TARGET_SAMPLE_RATE {
             samples = resample_linear(&samples, sample_rate, TARGET_SAMPLE_RATE);
@@ -741,8 +777,12 @@ impl IndexEngineInner {
 }
 
 impl IndexRuntime {
-    fn run_infer(&mut self, voice: &IndexVoice, text: &str) -> Result<(Vec<f32>, u32)> {
-        Python::with_gil(|py| -> Result<(Vec<f32>, u32)> {
+    fn run_infer(
+        &mut self,
+        voice: &IndexVoice,
+        text: &str,
+    ) -> Result<(Vec<f32>, u32, Option<JsonValue>)> {
+        Python::with_gil(|py| -> Result<(Vec<f32>, u32, Option<JsonValue>)> {
             let engine = self.engine.as_ref(py);
             let infer = engine.getattr("infer")?;
 
@@ -763,62 +803,129 @@ impl IndexRuntime {
 
             let result = infer.call(args, Some(kwargs))?;
             let tuple = result
-                .downcast::<pyo3::types::PyTuple>()
+                .downcast::<PyTuple>()
                 .map_err(|err| anyhow!(err.to_string()))?;
             let sr: u32 = tuple.get_item(0)?.extract()?;
             let bound = tuple.get_item(1)?;
 
-            if let Ok(array) = bound.downcast::<PyArray2<i16>>() {
-                let readonly: PyReadonlyArray2<i16> = array.readonly();
-                let view = readonly.as_array();
-                let mut waveform = Vec::with_capacity(view.len());
-                for &sample in view.iter() {
-                    waveform.push(sample as f32 / i16::MAX as f32);
+            let timings = if tuple.len() > 2 {
+                let stats_obj = tuple.get_item(2)?;
+                if stats_obj.is_none() {
+                    None
+                } else if let Ok(dict) = stats_obj.downcast::<PyDict>() {
+                    let mut map = JsonMap::new();
+                    for (key, value) in dict.iter() {
+                        let key_str: String = key.extract()?;
+                        map.insert(key_str, py_any_to_json(value)?);
+                    }
+                    Some(JsonValue::Object(map))
+                } else {
+                    Some(py_any_to_json(stats_obj)?)
                 }
-                return Ok((waveform, sr));
-            }
+            } else {
+                None
+            };
 
-            if let Ok(array) = bound.downcast::<PyArray1<i16>>() {
-                let readonly: PyReadonlyArray1<i16> = array.readonly();
-                let slice = readonly.as_slice()?;
-                let mut waveform = Vec::with_capacity(slice.len());
-                for &sample in slice {
-                    waveform.push(sample as f32 / i16::MAX as f32);
-                }
-                return Ok((waveform, sr));
-            }
+            let waveform = extract_waveform(bound)?;
 
-            if let Ok(array) = bound.downcast::<PyArray1<f32>>() {
-                let readonly: PyReadonlyArray1<f32> = array.readonly();
-                let waveform = readonly.as_slice()?.to_vec();
-                return Ok((waveform, sr));
-            }
-
-            if let Ok(array) = bound.downcast::<PyArray2<f32>>() {
-                let readonly: PyReadonlyArray2<f32> = array.readonly();
-                let view = readonly.as_array();
-                let mut waveform = Vec::with_capacity(view.len());
-                for &sample in view.iter() {
-                    waveform.push(sample);
-                }
-                return Ok((waveform, sr));
-            }
-
-            if let Ok(array) = bound.downcast::<PyArray1<f64>>() {
-                let readonly: PyReadonlyArray1<f64> = array.readonly();
-                let waveform = readonly
-                    .as_slice()?
-                    .iter()
-                    .map(|&sample| sample as f32)
-                    .collect();
-                return Ok((waveform, sr));
-            }
-
-            Err(anyhow!(
-                "unsupported waveform dtype returned by IndexTTS runtime"
-            ))
+            Ok((waveform, sr, timings))
         })
     }
+}
+
+fn extract_waveform(bound: &PyAny) -> Result<Vec<f32>> {
+    if let Ok(array) = bound.downcast::<PyArray2<i16>>() {
+        let readonly: PyReadonlyArray2<i16> = array.readonly();
+        let view = readonly.as_array();
+        let mut waveform = Vec::with_capacity(view.len());
+        for &sample in view.iter() {
+            waveform.push(sample as f32 / i16::MAX as f32);
+        }
+        return Ok(waveform);
+    }
+
+    if let Ok(array) = bound.downcast::<PyArray1<i16>>() {
+        let readonly: PyReadonlyArray1<i16> = array.readonly();
+        let slice = readonly.as_slice()?;
+        let mut waveform = Vec::with_capacity(slice.len());
+        for &sample in slice {
+            waveform.push(sample as f32 / i16::MAX as f32);
+        }
+        return Ok(waveform);
+    }
+
+    if let Ok(array) = bound.downcast::<PyArray1<f32>>() {
+        let readonly: PyReadonlyArray1<f32> = array.readonly();
+        return Ok(readonly.as_slice()?.to_vec());
+    }
+
+    if let Ok(array) = bound.downcast::<PyArray2<f32>>() {
+        let readonly: PyReadonlyArray2<f32> = array.readonly();
+        let view = readonly.as_array();
+        let mut waveform = Vec::with_capacity(view.len());
+        for &sample in view.iter() {
+            waveform.push(sample);
+        }
+        return Ok(waveform);
+    }
+
+    if let Ok(array) = bound.downcast::<PyArray1<f64>>() {
+        let readonly: PyReadonlyArray1<f64> = array.readonly();
+        let waveform = readonly
+            .as_slice()?
+            .iter()
+            .map(|&sample| sample as f32)
+            .collect();
+        return Ok(waveform);
+    }
+
+    Err(anyhow!(
+        "unsupported waveform dtype returned by IndexTTS runtime"
+    ))
+}
+
+fn py_any_to_json(value: &PyAny) -> Result<JsonValue> {
+    if value.is_none() {
+        return Ok(JsonValue::Null);
+    }
+
+    if let Ok(boolean) = value.extract::<bool>() {
+        return Ok(JsonValue::Bool(boolean));
+    }
+
+    if let Ok(int_val) = value.extract::<i64>() {
+        return Ok(JsonValue::Number(int_val.into()));
+    }
+
+    if let Ok(float_val) = value.extract::<f64>() {
+        if let Some(num) = serde_json::Number::from_f64(float_val) {
+            return Ok(JsonValue::Number(num));
+        }
+    }
+
+    if let Ok(text) = value.extract::<String>() {
+        return Ok(JsonValue::String(text));
+    }
+
+    if let Ok(list) = value.downcast::<PyList>() {
+        let mut items = Vec::with_capacity(list.len());
+        for item in list.iter() {
+            items.push(py_any_to_json(item)?);
+        }
+        return Ok(JsonValue::Array(items));
+    }
+
+    if let Ok(dict) = value.downcast::<PyDict>() {
+        let mut map = JsonMap::new();
+        for (key, val) in dict.iter() {
+            let key_str: String = key.extract()?;
+            map.insert(key_str, py_any_to_json(val)?);
+        }
+        return Ok(JsonValue::Object(map));
+    }
+
+    let text = value.str()?.to_str()?.to_owned();
+    Ok(JsonValue::String(text))
 }
 
 fn encode_wav(samples: &[f32], sample_rate: u32) -> Result<Vec<u8>> {
@@ -859,7 +966,6 @@ fn resample_linear(input: &[f32], src_rate: u32, dst_rate: u32) -> Vec<f32> {
 
     // Optimized: precompute inverse ratio and use f32 for faster operations
     let inv_ratio = (src_rate as f32) / (dst_rate as f32);
-    let input_len_minus_1 = (input.len() - 1) as f32;
 
     for i in 0..output_len {
         let src_pos = (i as f32) * inv_ratio;
