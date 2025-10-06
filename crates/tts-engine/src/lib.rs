@@ -8,7 +8,6 @@ use std::{
 };
 
 use std::collections::hash_map::DefaultHasher;
-use std::str::FromStr;
 
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
@@ -30,6 +29,9 @@ use thiserror::Error;
 use tokio::task;
 use tracing::{debug, info, instrument};
 use uuid::Uuid;
+
+mod engine_kind;
+use engine_kind::EngineKind;
 
 static PYTHONPATH_LOCK: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
 static PYTHONPATH_ENTRIES: Lazy<Mutex<HashSet<OsString>>> =
@@ -158,40 +160,6 @@ pub struct TtsResponse {
     pub voice_id: String,
     pub engine: EngineKind,
     pub engine_label: String,
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum EngineKind {
-    F5,
-    IndexTts,
-}
-
-impl EngineKind {
-    pub const fn as_str(&self) -> &'static str {
-        match self {
-            EngineKind::F5 => "f5",
-            EngineKind::IndexTts => "index_tts",
-        }
-    }
-}
-
-impl std::fmt::Display for EngineKind {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(self.as_str())
-    }
-}
-
-impl FromStr for EngineKind {
-    type Err = ();
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_ascii_lowercase().as_str() {
-            "f5" => Ok(EngineKind::F5),
-            "index_tts" | "index-tts" | "indextts" => Ok(EngineKind::IndexTts),
-            _ => Err(()),
-        }
-    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

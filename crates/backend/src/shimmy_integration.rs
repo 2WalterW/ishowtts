@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use shimmy::engine::{GenOptions, InferenceEngine, LoadedModel, ModelSpec};
 use tracing::instrument;
 
-use tts_engine::{TtsRequest, TtsResponse};
+use tts_engine::{EngineKind, TtsRequest, TtsResponse};
 
 use crate::synth::Synthesizer;
 
@@ -122,7 +122,9 @@ impl LoadedModel for F5LoadedModel {
             seed: payload.seed,
         };
 
-        let response = self.synthesizer.synthesize(request).await?;
+        let mut response = self.synthesizer.synthesize(request).await?;
+        response.engine = EngineKind::Shimmy;
+        response.engine_label = format!("Shimmy · {}", response.voice_id);
         let envelope = ShimmyTtsEnvelope { response };
         let serialized = serde_json::to_string(&envelope)?;
 
