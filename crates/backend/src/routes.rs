@@ -278,7 +278,6 @@ pub fn build_api_router(state: ApiState) -> Router {
         .route("/danmaku/start", post(start_danmaku))
         .route("/danmaku/stop", post(stop_danmaku))
         .route("/danmaku/enqueue", post(enqueue_danmaku))
-        .route("/danmaku/next", get(next_danmaku))
         .with_state(state.clone())
         .layer(cors);
 
@@ -289,6 +288,11 @@ pub fn build_api_router(state: ApiState) -> Router {
 }
 
 pub fn build_shimmy_router(state: Arc<ShimmyAppState>) -> Router {
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
+        .allow_headers(Any);
+
     Router::new()
         .route("/generate", post(shimmy::api::generate))
         .route("/models", get(shimmy::api::list_models))
@@ -298,9 +302,15 @@ pub fn build_shimmy_router(state: Arc<ShimmyAppState>) -> Router {
         .route("/models/:name/status", get(shimmy::api::model_status))
         .route("/ws/generate", get(shimmy::api::ws_generate))
         .with_state(state)
+        .layer(cors)
 }
 
 pub fn build_openai_router(state: Arc<ShimmyAppState>) -> Router {
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
+        .allow_headers(Any);
+
     Router::new()
         .route(
             "/chat/completions",
@@ -308,6 +318,7 @@ pub fn build_openai_router(state: Arc<ShimmyAppState>) -> Router {
         )
         .route("/models", get(shimmy::openai_compat::models))
         .with_state(state)
+        .layer(cors)
 }
 
 #[derive(Debug, Serialize)]
@@ -929,19 +940,6 @@ async fn enqueue_danmaku(
             "danmaku dropped"
         );
         Ok(StatusCode::NO_CONTENT)
-    }
-}
-
-#[instrument(skip(state))]
-async fn next_danmaku(State(state): State<ApiState>) -> impl IntoResponse {
-    if state.danmaku.is_some() {
-        (
-            StatusCode::GONE,
-            "HTTP 轮询接口已弃用，请改用 WebSocket /api/danmaku/stream",
-        )
-            .into_response()
-    } else {
-        StatusCode::NOT_IMPLEMENTED.into_response()
     }
 }
 
