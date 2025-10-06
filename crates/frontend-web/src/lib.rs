@@ -3,7 +3,8 @@ use gloo_net::http::Request;
 use gloo_timers::future::TimeoutFuture;
 use js_sys::{Array, Date, Uint8Array};
 use serde::{Deserialize, Serialize};
-use std::{collections::VecDeque, rc::Rc};
+use std::collections::{HashSet, VecDeque};
+use std::rc::Rc;
 use wasm_bindgen::closure::Closure;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
@@ -153,6 +154,66 @@ impl HistorySource {
             Self::Danmaku => "弹幕",
         }
     }
+}
+
+#[derive(Clone, Debug, PartialEq, Deserialize)]
+struct ShimmyModelListResponse {
+    models: Vec<ShimmyModelInfo>,
+}
+
+#[derive(Clone, Debug, PartialEq, Deserialize)]
+struct ShimmyModelInfo {
+    name: String,
+    #[serde(default)]
+    size_bytes: Option<u64>,
+    #[serde(default)]
+    model_type: Option<String>,
+    #[serde(default)]
+    parameter_count: Option<String>,
+    source: String,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+enum EngineModelChoice {
+    Tts { engine_label: String },
+    Shimmy { model_id: String },
+}
+
+#[derive(Clone, Debug, PartialEq)]
+struct EngineOption {
+    value: String,
+    label: String,
+    choice: EngineModelChoice,
+}
+
+impl EngineOption {
+    fn matches_value(&self, value: &str) -> bool {
+        self.value == value
+    }
+}
+
+fn parse_engine_choice(value: &str) -> Option<EngineModelChoice> {
+    if let Some(rest) = value.strip_prefix("tts:") {
+        return Some(EngineModelChoice::Tts {
+            engine_label: rest.to_string(),
+        });
+    }
+    if let Some(rest) = value.strip_prefix("shimmy:") {
+        return Some(EngineModelChoice::Shimmy {
+            model_id: rest.to_string(),
+        });
+    }
+    None
+}
+
+#[derive(Clone, Debug, Deserialize)]
+struct ShimmyGenerateResponse {
+    response: String,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+struct ShimmyTtsEnvelope {
+    response: TtsResponse,
 }
 
 #[derive(Clone, Debug, PartialEq, Default)]
