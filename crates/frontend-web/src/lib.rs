@@ -1830,6 +1830,9 @@ fn app() -> Html {
         }
     }
     for model in &shimmy_models {
+        if model.name.eq_ignore_ascii_case("f5-tts-demo") {
+            continue;
+        }
         let model_name = model.name.clone();
         engine_options.push(EngineOption {
             value: format!("shimmy:{model_name}"),
