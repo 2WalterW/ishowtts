@@ -1246,6 +1246,7 @@ fn app() -> Html {
     let history_state_submit = history_state.clone();
     let clip_counter_submit = clip_counter.clone();
     let voices_state_submit = voices_state.clone();
+    let engine_options_submit = engine_options.clone();
 
     let on_submit = {
         let text_state = text_state_submit;
@@ -1256,6 +1257,7 @@ fn app() -> Html {
         let history_state = history_state_submit;
         let clip_counter = clip_counter_submit;
         let voices_state = voices_state_submit;
+        let engine_options = engine_options_submit.clone();
 
         Callback::from(move |_| {
             let text = (*text_state).trim().to_string();
@@ -1263,14 +1265,6 @@ fn app() -> Html {
                 status_state.set(SynthesisStatus::Error("请输入要合成的文本".into()));
                 return;
             }
-
-            let engine_label = match (*selected_engine_state).clone() {
-                Some(value) => value,
-                None => {
-                    status_state.set(SynthesisStatus::Error("尚未选择模型".into()));
-                    return;
-                }
-            };
 
             let voice_id = match (*selected_voice_state).clone() {
                 Some(value) => value,
@@ -1286,12 +1280,34 @@ fn app() -> Html {
                 return;
             };
 
-            if voice_meta.engine_label != engine_label {
-                status_state.set(SynthesisStatus::Error("音色不属于当前模型".into()));
+            let engine_option = {
+                let current = (*selected_engine_state).clone();
+                current
+                    .and_then(|value| {
+                        engine_options
+                            .iter()
+                            .find(|opt| opt.value == value)
+                            .cloned()
+                    })
+                    .or_else(|| engine_options.first().cloned())
+            };
+
+            let Some(engine_option) = engine_option else {
+                status_state.set(SynthesisStatus::Error("尚未选择模型".into()));
                 return;
+            };
+
+            if let EngineModelChoice::Tts { ref engine_label } = engine_option.choice {
+                if voice_meta.engine_label != *engine_label {
+                    status_state.set(SynthesisStatus::Error("音色不属于当前模型".into()));
+                    return;
+                }
             }
 
             let engine_value = voice_meta.engine.clone();
+            let engine_label_display = engine_option.label.clone();
+            let engine_choice = engine_option.choice.clone();
+            let engine_prompt_value = serde_json::Value::String(engine_value.clone());
 
             status_state.set(SynthesisStatus::Loading);
             let options = (*advanced_state).clone();
@@ -1301,10 +1317,7 @@ fn app() -> Html {
                 "voice_id".into(),
                 serde_json::Value::String(voice_id.clone()),
             );
-            payload.insert(
-                "engine".into(),
-                serde_json::Value::String(engine_value.clone()),
-            );
+            payload.insert("engine".into(), engine_prompt_value);
 
             if let Some(value) = float_value(&options.speed) {
                 payload.insert("speed".into(), value);
@@ -1334,58 +1347,109 @@ fn app() -> Html {
                 payload.insert("seed".into(), value);
             }
 
-            let request_body = serde_json::Value::Object(payload).to_string();
+            let payload_value = serde_json::Value::Object(payload.clone());
             let history_state = history_state.clone();
             let status_state = status_state.clone();
             let clip_counter = clip_counter.clone();
+            let engine_value_clone = engine_value.clone();
+            let engine_label_clone = engine_label_display.clone();
+            let text_clone = text.clone();
+            let engine_choice_clone = engine_choice.clone();
 
             spawn_local(async move {
-                let request = Request::post(&format!("{BACKEND_URL}/api/tts"))
-                    .header("Content-Type", "application/json")
-                    .body(request_body);
+                let handle_success = |data: TtsResponse| {
+                    let mut clip_id = *clip_counter;
+                    clip_id += 1;
+                    clip_counter.set(clip_id);
 
-                let response = match request {
-                    Ok(req) => req.send().await,
-                    Err(err) => {
-                        status_state.set(SynthesisStatus::Error(format!("构建请求失败: {err}")));
-                        return;
-                    }
+                    let audio_src = format!("data:{};base64,{}", data.format, data.audio_base64);
+                    let clip = ClipHistoryItem {
+                        id: clip_id,
+                        source: HistorySource::Tts,
+                        engine: data
+                            .engine
+                            .clone()
+                            .unwrap_or_else(|| engine_value_clone.clone()),
+                        engine_label: data
+                            .engine_label
+                            .clone()
+                            .unwrap_or_else(|| engine_label_clone.clone()),
+                        voice_id: data.voice_id.clone(),
+                        text: text_clone.clone(),
+                        created_at: now_string(),
+                        sample_rate: data.sample_rate,
+                        waveform_len: data.waveform_len,
+                        format: data.format.clone(),
+                        audio_src,
+                    };
+                    history_state.dispatch(HistoryAction::Push(clip));
+                    status_state.set(SynthesisStatus::Ready("生成完成 ✅".into()));
                 };
 
-                match response {
-                    Ok(resp) => match resp.json::<TtsResponse>().await {
-                        Ok(data) => {
-                            let mut clip_id = *clip_counter;
-                            clip_id += 1;
-                            clip_counter.set(clip_id);
+                match engine_choice_clone {
+                    EngineModelChoice::Tts { .. } => {
+                        let request_body = payload_value.to_string();
+                        let request = Request::post(&format!("{BACKEND_URL}/api/tts"))
+                            .header("Content-Type", "application/json")
+                            .body(request_body);
 
-                            let audio_src =
-                                format!("data:{};base64,{}", data.format, data.audio_base64);
-                            let clip = ClipHistoryItem {
-                                id: clip_id,
-                                source: HistorySource::Tts,
-                                engine: data.engine.clone().unwrap_or_else(|| engine_value.clone()),
-                                engine_label: data
-                                    .engine_label
-                                    .clone()
-                                    .unwrap_or_else(|| engine_label.clone()),
-                                voice_id: data.voice_id.clone(),
-                                text: text.clone(),
-                                created_at: now_string(),
-                                sample_rate: data.sample_rate,
-                                waveform_len: data.waveform_len,
-                                format: data.format.clone(),
-                                audio_src: audio_src.clone(),
-                            };
-                            history_state.dispatch(HistoryAction::Push(clip));
-                            status_state.set(SynthesisStatus::Ready("生成完成 ✅".into()));
+                        let response = match request {
+                            Ok(req) => req.send().await,
+                            Err(err) => {
+                                status_state
+                                    .set(SynthesisStatus::Error(format!("构建请求失败: {err}")));
+                                return;
+                            }
+                        };
+
+                        match response {
+                            Ok(resp) => match resp.json::<TtsResponse>().await {
+                                Ok(data) => handle_success(data),
+                                Err(err) => status_state
+                                    .set(SynthesisStatus::Error(format!("解析响应失败: {err}"))),
+                            },
+                            Err(err) => {
+                                status_state.set(SynthesisStatus::Error(format!("请求失败: {err}")))
+                            }
                         }
-                        Err(err) => {
-                            status_state.set(SynthesisStatus::Error(format!("解析响应失败: {err}")))
+                    }
+                    EngineModelChoice::Shimmy { model_id } => {
+                        let shimmy_body = serde_json::json!({
+                            "model": model_id,
+                            "prompt": payload_value.to_string(),
+                        });
+
+                        let request = Request::post(&format!("{BACKEND_URL}/shimmy/generate"))
+                            .header("Content-Type", "application/json")
+                            .body(shimmy_body.to_string());
+
+                        let response = match request {
+                            Ok(req) => req.send().await,
+                            Err(err) => {
+                                status_state
+                                    .set(SynthesisStatus::Error(format!("构建请求失败: {err}")));
+                                return;
+                            }
+                        };
+
+                        match response {
+                            Ok(resp) => match resp.json::<ShimmyGenerateResponse>().await {
+                                Ok(data) => {
+                                    match serde_json::from_str::<ShimmyTtsEnvelope>(&data.response)
+                                    {
+                                        Ok(envelope) => handle_success(envelope.response),
+                                        Err(err) => status_state.set(SynthesisStatus::Error(
+                                            format!("解析 Shimmy 响应失败: {err}"),
+                                        )),
+                                    }
+                                }
+                                Err(err) => status_state
+                                    .set(SynthesisStatus::Error(format!("解析响应失败: {err}"))),
+                            },
+                            Err(err) => {
+                                status_state.set(SynthesisStatus::Error(format!("请求失败: {err}")))
+                            }
                         }
-                    },
-                    Err(err) => {
-                        status_state.set(SynthesisStatus::Error(format!("请求失败: {err}")))
                     }
                 }
             });
