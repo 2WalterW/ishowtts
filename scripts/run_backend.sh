@@ -54,12 +54,14 @@ if [[ -n "${OPENFST_ROOT:-}" ]]; then
   export C_INCLUDE_PATH="$OPENFST_ROOT/include:${C_INCLUDE_PATH:-}"
 fi
 
+echo "Building backend binary (release profile)..."
+(cd "$REPO_DIR" && cargo build -p ishowtts-backend --release)
+
 BIN="$REPO_DIR/target/release/ishowtts-backend"
 
 if [[ ! -x "$BIN" ]]; then
-  echo "Building backend binary (release profile)..."
-  (cd "$REPO_DIR" && cargo build -p ishowtts-backend --release)
-  BIN="$REPO_DIR/target/release/ishowtts-backend"
+  echo "error: backend binary '$BIN' missing after build" >&2
+  exit 1
 fi
 
 echo "Starting iShowTTS backend..."
