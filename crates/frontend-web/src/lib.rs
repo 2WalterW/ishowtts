@@ -200,6 +200,56 @@ fn parse_engine_choice(value: &str) -> Option<EngineModelChoice> {
     None
 }
 
+fn extract_shimmy_payload(body: &str) -> Option<String> {
+    let mut candidate: Option<String> = None;
+    let mut chunk_lines: Vec<String> = Vec::new();
+
+    for line in body.lines() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() {
+            if !chunk_lines.is_empty() {
+                let combined = chunk_lines.join("\n");
+                let trimmed_combined = combined.trim();
+                if !trimmed_combined.is_empty() && !trimmed_combined.eq_ignore_ascii_case("[DONE]")
+                {
+                    candidate = Some(trimmed_combined.to_string());
+                }
+                chunk_lines.clear();
+            }
+            continue;
+        }
+
+        if let Some(rest) = trimmed.strip_prefix("data:") {
+            chunk_lines.push(rest.trim().to_string());
+            continue;
+        }
+
+        if chunk_lines.is_empty() && trimmed.starts_with('{') {
+            candidate = Some(trimmed.to_string());
+        }
+    }
+
+    if !chunk_lines.is_empty() {
+        let combined = chunk_lines.join("\n");
+        let trimmed_combined = combined.trim();
+        if !trimmed_combined.is_empty() && !trimmed_combined.eq_ignore_ascii_case("[DONE]") {
+            candidate = Some(trimmed_combined.to_string());
+        }
+    }
+
+    if candidate.is_none() {
+        let trimmed = body.trim();
+        if !trimmed.is_empty()
+            && !trimmed.eq_ignore_ascii_case("[DONE]")
+            && trimmed.starts_with('{')
+        {
+            candidate = Some(trimmed.to_string());
+        }
+    }
+
+    candidate
+}
+
 #[derive(Clone, Debug, Deserialize)]
 struct ShimmyGenerateResponse {
     response: String,
@@ -1418,34 +1468,36 @@ fn app() -> Html {
                         match response {
                             Ok(resp) => match resp.text().await {
                                 Ok(body) => {
-                                    let data_line = body
-                                        .lines()
-                                        .rev()
-                                        .find(|line| line.trim_start().starts_with("data:"));
-
-                                    let raw_json = data_line
-                                        .map(|line| line.trim_start_matches("data:").trim())
-                                        .filter(|segment| !segment.is_empty())
-                                        .unwrap_or_else(|| body.trim());
-
-                                    let envelope =
-                                        serde_json::from_str::<ShimmyTtsEnvelope>(raw_json)
-                                            .or_else(|_| {
-                                                serde_json::from_str::<ShimmyGenerateResponse>(
-                                                    raw_json,
-                                                )
-                                                .and_then(|wrapper| {
-                                                    serde_json::from_str::<ShimmyTtsEnvelope>(
-                                                        &wrapper.response,
+                                    if let Some(raw_json) = extract_shimmy_payload(&body) {
+                                        let envelope =
+                                            serde_json::from_str::<ShimmyTtsEnvelope>(&raw_json)
+                                                .or_else(|_| {
+                                                    serde_json::from_str::<ShimmyGenerateResponse>(
+                                                        &raw_json,
                                                     )
-                                                })
-                                            });
+                                                    .and_then(|wrapper| {
+                                                        serde_json::from_str::<ShimmyTtsEnvelope>(
+                                                            &wrapper.response,
+                                                        )
+                                                    })
+                                                });
 
-                                    match envelope {
-                                        Ok(envelope) => handle_success(envelope.response),
-                                        Err(err) => status_state.set(SynthesisStatus::Error(
-                                            format!("解析 Shimmy 响应失败: {err}"),
-                                        )),
+                                        match envelope {
+                                            Ok(envelope) => handle_success(envelope.response),
+                                            Err(err) => status_state.set(SynthesisStatus::Error(
+                                                format!("解析 Shimmy 响应失败: {err}"),
+                                            )),
+                                        }
+                                    } else {
+                                        let preview: String = body
+                                            .chars()
+                                            .filter(|ch| *ch != '\r' && *ch != '\n')
+                                            .take(80)
+                                            .collect();
+                                        status_state.set(SynthesisStatus::Error(format!(
+                                            "Shimmy 响应为空或无效: {}",
+                                            preview
+                                        )));
                                     }
                                 }
                                 Err(err) => status_state
