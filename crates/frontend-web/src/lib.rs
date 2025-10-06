@@ -1416,10 +1416,32 @@ fn app() -> Html {
                         };
 
                         match response {
-                            Ok(resp) => match resp.json::<ShimmyGenerateResponse>().await {
-                                Ok(data) => {
-                                    match serde_json::from_str::<ShimmyTtsEnvelope>(&data.response)
-                                    {
+                            Ok(resp) => match resp.text().await {
+                                Ok(body) => {
+                                    let data_line = body
+                                        .lines()
+                                        .rev()
+                                        .find(|line| line.trim_start().starts_with("data:"));
+
+                                    let raw_json = data_line
+                                        .map(|line| line.trim_start_matches("data:").trim())
+                                        .filter(|segment| !segment.is_empty())
+                                        .unwrap_or_else(|| body.trim());
+
+                                    let envelope =
+                                        serde_json::from_str::<ShimmyTtsEnvelope>(raw_json)
+                                            .or_else(|_| {
+                                                serde_json::from_str::<ShimmyGenerateResponse>(
+                                                    raw_json,
+                                                )
+                                                .and_then(|wrapper| {
+                                                    serde_json::from_str::<ShimmyTtsEnvelope>(
+                                                        &wrapper.response,
+                                                    )
+                                                })
+                                            });
+
+                                    match envelope {
                                         Ok(envelope) => handle_success(envelope.response),
                                         Err(err) => status_state.set(SynthesisStatus::Error(
                                             format!("解析 Shimmy 响应失败: {err}"),
@@ -1427,7 +1449,7 @@ fn app() -> Html {
                                     }
                                 }
                                 Err(err) => status_state
-                                    .set(SynthesisStatus::Error(format!("解析响应失败: {err}"))),
+                                    .set(SynthesisStatus::Error(format!("读取响应失败: {err}"))),
                             },
                             Err(err) => {
                                 status_state.set(SynthesisStatus::Error(format!("请求失败: {err}")))
