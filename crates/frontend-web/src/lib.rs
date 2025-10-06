@@ -1854,10 +1854,6 @@ fn app() -> Html {
     let selected_engine_choice = selected_engine_option
         .as_ref()
         .map(|option| option.choice.clone());
-    let selected_engine_label = selected_engine_option
-        .as_ref()
-        .map(|option| option.label.clone())
-        .unwrap_or_default();
     let voices_for_engine: Vec<VoiceSummary> = match selected_engine_choice {
         Some(EngineModelChoice::Tts { ref engine_label }) => voices
             .iter()
