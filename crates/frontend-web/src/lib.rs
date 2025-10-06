@@ -759,6 +759,31 @@ fn app() -> Html {
     }
 
     {
+        let shimmy_models_state = shimmy_models_state.clone();
+        let status_state = status_state.clone();
+        use_effect_with((), move |_| {
+            let shimmy_models_state = shimmy_models_state.clone();
+            let status_state = status_state.clone();
+            spawn_local(async move {
+                match Request::get(&format!("{BACKEND_URL}/shimmy/models"))
+                    .send()
+                    .await
+                {
+                    Ok(resp) => match resp.json::<ShimmyModelListResponse>().await {
+                        Ok(list) => shimmy_models_state.set(list.models),
+                        Err(err) => status_state
+                            .set(SynthesisStatus::Error(format!("解析模型列表失败: {err}"))),
+                    },
+                    Err(err) => {
+                        status_state.set(SynthesisStatus::Error(format!("请求模型列表失败: {err}")))
+                    }
+                }
+            });
+            || ()
+        });
+    }
+
+    {
         let voice_manager_open_state = voice_manager_open_state.clone();
         let selected_voice_state = selected_voice_state.clone();
         let voice_reference_state = voice_reference_state.clone();
