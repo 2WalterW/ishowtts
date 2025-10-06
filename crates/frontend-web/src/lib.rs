@@ -913,10 +913,27 @@ fn app() -> Html {
                     selected_voice_state.set(None);
                 } else {
                     let voices = (*voices_state).clone();
-                    let next_voice = voices
-                        .iter()
-                        .find(|v| v.engine_label == value)
-                        .map(|v| v.id.clone());
+                    let current_voice = (*selected_voice_state).clone();
+                    let choice = parse_engine_choice(&value);
+                    let next_voice = match choice {
+                        Some(EngineModelChoice::Tts { ref engine_label }) => voices
+                            .iter()
+                            .find(|v| &v.engine_label == engine_label)
+                            .map(|v| v.id.clone())
+                            .or_else(|| voices.first().map(|v| v.id.clone())),
+                        Some(EngineModelChoice::Shimmy { .. }) => {
+                            if let Some(existing) = current_voice {
+                                if voices.iter().any(|v| v.id == existing) {
+                                    Some(existing)
+                                } else {
+                                    voices.first().map(|v| v.id.clone())
+                                }
+                            } else {
+                                voices.first().map(|v| v.id.clone())
+                            }
+                        }
+                        None => voices.first().map(|v| v.id.clone()),
+                    };
                     selected_engine_state.set(Some(value));
                     selected_voice_state.set(next_voice);
                 }
