@@ -6,7 +6,7 @@ use danmaku::config::DanmakuConfig;
 use danmaku_gateway::config::GatewayConfig as DanmakuGatewayConfig;
 use serde::Deserialize;
 use shimmy::model_registry::ModelEntry;
-use tts_engine::{F5EngineConfig, IndexTtsEngineConfig};
+use tts_engine::{F5EngineConfig, IndexTtsEngineConfig, IndexTtsVllmEngineConfig};
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct AppConfig {
@@ -19,6 +19,8 @@ pub struct AppConfig {
     pub f5: F5EngineConfig,
     #[serde(default)]
     pub index_tts: Option<IndexTtsEngineConfig>,
+    #[serde(default)]
+    pub index_tts_vllm: Option<IndexTtsVllmEngineConfig>,
     #[serde(default)]
     pub shimmy: ShimmyConfig,
     #[serde(default)]
