@@ -2,11 +2,9 @@ use std::{
     collections::{HashMap, HashSet},
     ffi::OsString,
     hash::{Hash, Hasher},
-    io::Cursor,
     num::NonZeroUsize,
     path::{Path, PathBuf},
     sync::Arc,
-    time::Duration,
 };
 
 use std::collections::hash_map::DefaultHasher;
@@ -26,9 +24,8 @@ use pyo3::{
     types::{PyDict, PyList, PyModule, PyTuple},
     IntoPy, Py, PyAny, PyResult, Python,
 };
-use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Map as JsonMap, Value as JsonValue};
+use serde_json::{Map as JsonMap, Value as JsonValue};
 use thiserror::Error;
 use tokio::task;
 use tracing::{debug, info, instrument};
@@ -123,35 +120,6 @@ pub struct IndexTtsVoiceConfig {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct IndexTtsVllmEngineConfig {
-    pub base_url: String,
-    #[serde(default)]
-    pub api_key: Option<String>,
-    #[serde(default)]
-    pub default_model: Option<String>,
-    #[serde(default)]
-    pub timeout_secs: Option<u64>,
-    #[serde(default)]
-    pub voices: Vec<IndexTtsVllmVoiceConfig>,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct IndexTtsVllmVoiceConfig {
-    pub id: String,
-    pub character: String,
-    #[serde(default)]
-    pub model: Option<String>,
-    #[serde(default)]
-    pub engine_label: Option<String>,
-    #[serde(default)]
-    pub language: Option<String>,
-    #[serde(default)]
-    pub sample_rate: Option<u32>,
-    #[serde(default)]
-    pub preload: bool,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct TtsRequest {
     pub text: String,
     pub voice_id: String,
@@ -197,7 +165,6 @@ pub struct TtsResponse {
 pub enum EngineKind {
     F5,
     IndexTts,
-    IndexTtsVllm,
 }
 
 impl EngineKind {
@@ -205,7 +172,6 @@ impl EngineKind {
         match self {
             EngineKind::F5 => "f5",
             EngineKind::IndexTts => "index_tts",
-            EngineKind::IndexTtsVllm => "index_tts_vllm",
         }
     }
 }
@@ -223,9 +189,6 @@ impl FromStr for EngineKind {
         match s.to_ascii_lowercase().as_str() {
             "f5" => Ok(EngineKind::F5),
             "index_tts" | "index-tts" | "indextts" => Ok(EngineKind::IndexTts),
-            "index_tts_vllm" | "index-tts-vllm" | "indextts_vllm" | "indextts-vllm" => {
-                Ok(EngineKind::IndexTtsVllm)
-            }
             _ => Err(()),
         }
     }
@@ -840,21 +803,12 @@ impl IndexEngineInner {
                 .get("emo_cache_hit")
                 .and_then(JsonValue::as_bool)
                 .unwrap_or(false);
-            let short_prompt = stats
-                .get("short_prompt")
-                .and_then(JsonValue::as_bool)
-                .unwrap_or(false);
-            let diffusion_steps = stats
-                .get("diffusion_steps")
-                .and_then(JsonValue::as_u64)
-                .unwrap_or(0);
             let total_ms = stats
                 .get("total_ms")
                 .and_then(JsonValue::as_f64)
                 .unwrap_or_default();
 
             let audio_cache_stored = cache_key.is_some();
-            let timings_str = stats.to_string();
             info!(
                 target = "ishowtts::tts_engine",
                 engine = %EngineKind::IndexTts.as_str(),
@@ -863,12 +817,10 @@ impl IndexEngineInner {
                 segment_count,
                 cache_hit,
                 emo_cache_hit,
-                short_prompt,
-                diffusion_steps,
                 audio_cache_hit = false,
                 audio_cache_stored,
                 total_ms,
-                timings = %timings_str,
+                timings = %stats,
                 "indextts synthesis timings"
             );
         }
@@ -957,7 +909,7 @@ impl IndexRuntime {
                 kwargs.set_item("emo_text", emo_text)?;
                 kwargs.set_item("use_emo_text", true)?;
             }
-            kwargs.set_item("verbose", true)?;
+            kwargs.set_item("verbose", false)?;
 
             let args = (voice.reference_audio.as_os_str(), text, "");
 
@@ -1086,167 +1038,6 @@ fn py_any_to_json(value: &PyAny) -> Result<JsonValue> {
 
     let text = value.str()?.to_str()?.to_owned();
     Ok(JsonValue::String(text))
-}
-
-#[derive(Clone)]
-pub struct IndexTtsVllmEngine {
-    client: Client,
-    base_url: String,
-    default_model: Option<String>,
-    api_key: Option<String>,
-    voices: Arc<HashMap<String, IndexTtsVllmVoice>>,
-}
-
-#[derive(Clone, Debug)]
-struct IndexTtsVllmVoice {
-    id: String,
-    character: String,
-    engine_label: String,
-    language: Option<String>,
-    model: Option<String>,
-    sample_rate: u32,
-}
-
-impl IndexTtsVllmEngine {
-    pub fn new(config: IndexTtsVllmEngineConfig) -> Result<Self> {
-        if config.voices.is_empty() {
-            anyhow::bail!("IndexTTS vLLM configuration must declare at least one voice profile");
-        }
-
-        let timeout = config.timeout_secs.unwrap_or(30);
-        let client = Client::builder()
-            .timeout(Duration::from_secs(timeout))
-            .build()
-            .context("failed to build HTTP client for IndexTTS vLLM")?;
-
-        let mut voices = HashMap::new();
-        for voice in config.voices {
-            let entry = IndexTtsVllmVoice {
-                id: voice.id.clone(),
-                character: voice.character.clone(),
-                engine_label: voice
-                    .engine_label
-                    .clone()
-                    .unwrap_or_else(|| "IndexTTS-vLLM".to_string()),
-                language: voice.language.clone(),
-                model: voice.model.clone(),
-                sample_rate: voice.sample_rate.unwrap_or(TARGET_SAMPLE_RATE),
-            };
-
-            if voices.insert(entry.id.clone(), entry).is_some() {
-                anyhow::bail!(
-                    "duplicate IndexTTS vLLM voice id '{}' detected in configuration",
-                    voice.id
-                );
-            }
-        }
-
-        Ok(Self {
-            client,
-            base_url: config.base_url.trim_end_matches('/').to_string(),
-            default_model: config.default_model,
-            api_key: config.api_key,
-            voices: Arc::new(voices),
-        })
-    }
-}
-
-#[async_trait]
-impl TtsEngine for IndexTtsVllmEngine {
-    fn kind(&self) -> EngineKind {
-        EngineKind::IndexTtsVllm
-    }
-
-    fn voice_descriptors(&self) -> Vec<VoiceDescriptor> {
-        self.voices
-            .values()
-            .map(|voice| VoiceDescriptor {
-                id: voice.id.clone(),
-                engine: EngineKind::IndexTtsVllm,
-                engine_label: voice.engine_label.clone(),
-                language: voice.language.clone(),
-                reference_text: None,
-            })
-            .collect()
-    }
-
-    async fn synthesize(&self, request: TtsRequest) -> Result<TtsResponse> {
-        let voice = self
-            .voices
-            .get(&request.voice_id)
-            .cloned()
-            .ok_or_else(|| TtsEngineError::VoiceNotFound(request.voice_id.clone()))?;
-
-        let model = voice
-            .model
-            .clone()
-            .or_else(|| self.default_model.clone())
-            .unwrap_or_else(|| "index-tts-vllm".to_string());
-
-        let mut body = json!({
-            "model": model,
-            "voice": voice.character.clone(),
-            "input": request.text.clone(),
-        });
-        if let Some(seed) = request.seed {
-            if let Some(map) = body.as_object_mut() {
-                map.insert("seed".to_string(), json!(seed));
-            }
-        }
-
-        let url = format!("{}/audio/speech", self.base_url);
-        let mut builder = self.client.post(url).json(&body);
-        if let Some(ref key) = self.api_key {
-            builder = builder.bearer_auth(key);
-        }
-
-        let response = builder
-            .send()
-            .await
-            .with_context(|| "failed to call IndexTTS vLLM service")?;
-        let status = response.status();
-        if !status.is_success() {
-            let error_text = response.text().await.unwrap_or_default();
-            anyhow::bail!("IndexTTS vLLM service returned {}: {}", status, error_text);
-        }
-
-        let audio_bytes = response
-            .bytes()
-            .await
-            .with_context(|| "failed to read IndexTTS vLLM audio payload")?
-            .to_vec();
-
-        let reader = hound::WavReader::new(Cursor::new(audio_bytes.as_slice()))
-            .map_err(|err| anyhow!("failed to parse WAV from IndexTTS vLLM response: {err}"))?;
-        let spec = reader.spec();
-        let mut sample_rate = spec.sample_rate;
-        if sample_rate == 0 {
-            sample_rate = voice.sample_rate;
-        }
-        let frames = reader.duration() as usize;
-        let channels = usize::from(spec.channels.max(1));
-        let waveform_len = frames.saturating_mul(channels);
-
-        let encoded = BASE64.encode(&audio_bytes);
-
-        Ok(TtsResponse {
-            request_id: Uuid::new_v4(),
-            sample_rate,
-            audio_base64: encoded,
-            waveform_len,
-            voice_id: voice.id.clone(),
-            engine: EngineKind::IndexTtsVllm,
-            engine_label: voice.engine_label.clone(),
-        })
-    }
-
-    fn apply_override(&self, _voice_id: &str, _update: VoiceOverrideUpdate) -> Result<()> {
-        anyhow::bail!("IndexTTS vLLM voices do not support overrides")
-    }
-
-    fn resolve_reference(&self, _voice_id: &str) -> Option<(PathBuf, Option<String>)> {
-        None
-    }
 }
 
 impl AudioCacheKey {
