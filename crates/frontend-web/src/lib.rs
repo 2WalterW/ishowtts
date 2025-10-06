@@ -1246,7 +1246,6 @@ fn app() -> Html {
     let history_state_submit = history_state.clone();
     let clip_counter_submit = clip_counter.clone();
     let voices_state_submit = voices_state.clone();
-    let engine_options_submit = engine_options.clone();
 
     let on_submit = {
         let text_state = text_state_submit;
@@ -1257,7 +1256,7 @@ fn app() -> Html {
         let history_state = history_state_submit;
         let clip_counter = clip_counter_submit;
         let voices_state = voices_state_submit;
-        let engine_options = engine_options_submit.clone();
+        let engine_options = engine_options_snapshot.clone();
 
         Callback::from(move |_| {
             let text = (*text_state).trim().to_string();
@@ -1863,6 +1862,7 @@ fn app() -> Html {
         _ => voices.clone(),
     };
     let voice_ready = !selected_voice.is_empty();
+    let engine_options_snapshot = engine_options.clone();
 
     let voice_reference_detail_view = (*voice_reference_state).clone();
     let voice_reference_error_msg = (*voice_reference_error_state).clone();
