@@ -6,7 +6,7 @@ use danmaku::config::DanmakuConfig;
 use danmaku_gateway::config::GatewayConfig as DanmakuGatewayConfig;
 use serde::Deserialize;
 use shimmy::model_registry::ModelEntry;
-use tts_engine::{F5EngineConfig, IndexTtsEngineConfig};
+use tts_engine::{CsmEngineConfig, F5EngineConfig, IndexTtsEngineConfig};
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct AppConfig {
@@ -19,6 +19,8 @@ pub struct AppConfig {
     pub f5: F5EngineConfig,
     #[serde(default)]
     pub index_tts: Option<IndexTtsEngineConfig>,
+    #[serde(default)]
+    pub csm: Option<CsmEngineConfig>,
     #[serde(default)]
     pub shimmy: ShimmyConfig,
     #[serde(default)]
@@ -202,6 +204,27 @@ impl AppConfig {
                         emo_audio,
                         &format!("emotion audio for IndexTTS voice {}", voice.id),
                     )?;
+                }
+            }
+        }
+
+        if let Some(ref mut csm_cfg) = self.csm {
+            csm_cfg.python_package_path = normalize_required(
+                base,
+                &csm_cfg.python_package_path,
+                "CSM python package path",
+            )?;
+            if let Some(ref mut local_model) = csm_cfg.model_local_path {
+                *local_model = normalize_required(base, local_model, "CSM model local path")?;
+            }
+            if let Some(ref mut cache_dir) = csm_cfg.cache_dir {
+                *cache_dir = normalize_optional(base, cache_dir)?;
+            }
+
+            for voice in &mut csm_cfg.voices {
+                for segment in &mut voice.context {
+                    let label = format!("context audio for CSM voice '{}'", voice.id);
+                    segment.audio_path = normalize_required(base, &segment.audio_path, &label)?;
                 }
             }
         }

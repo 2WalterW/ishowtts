@@ -30,10 +30,7 @@ use crate::{
     voice_overrides::{OverrideAudio, VoiceOverrideStore},
 };
 use danmaku::message::{MessageContent, NormalizedMessage, Platform};
-use shimmy::{
-    engine::{GenOptions, ModelSpec},
-    AppState as ShimmyAppState,
-};
+use shimmy::AppState as ShimmyAppState;
 use tts_engine::{EngineKind, TtsRequest, TtsResponse, VoiceOverrideUpdate};
 
 const MAX_WORDS_PER_REQUEST: usize = 77;
@@ -58,7 +55,6 @@ pub struct ApiState {
     pub default_voice: String,
     pub danmaku: Option<Arc<DanmakuService>>,
     pub voice_overrides: Arc<VoiceOverrideStore>,
-    pub shimmy: Arc<ShimmyAppState>,
 }
 
 #[derive(Serialize)]
@@ -75,8 +71,6 @@ pub struct SynthesizePayload {
     pub voice_id: Option<String>,
     #[serde(default)]
     pub engine: Option<String>,
-    #[serde(default)]
-    pub shimmy_model: Option<String>,
     #[serde(default)]
     pub speed: Option<f32>,
     #[serde(default)]
@@ -107,11 +101,6 @@ pub struct SynthesizeResponse {
     pub audio_base64: String,
     pub waveform_len: usize,
     pub format: &'static str,
-}
-
-#[derive(Debug, Deserialize)]
-struct ShimmyEnvelope {
-    response: TtsResponse,
 }
 
 #[instrument(skip(state))]
@@ -145,14 +134,8 @@ pub async fn synthesize(
         StatusCode::BAD_REQUEST,
         format!("unknown voice_id '{voice_id}'"),
     ))?;
-    let requested_engine = payload
-        .engine
-        .as_ref()
-        .map(|value| value.to_ascii_lowercase());
-    let is_shimmy = matches!(requested_engine.as_deref(), Some("shimmy"));
-
-    if let Some(engine_name) = requested_engine.as_deref() {
-        if engine_name != "shimmy" && engine_name != voice_meta.engine.as_str() {
+    if let Some(engine_name) = payload.engine.as_deref() {
+        if engine_name != voice_meta.engine.as_str() {
             return Err((
                 StatusCode::BAD_REQUEST,
                 format!(
@@ -168,65 +151,24 @@ pub async fn synthesize(
         return Err((StatusCode::BAD_REQUEST, "text must not be empty".into()));
     }
 
-    let mut request = build_request(truncated_text.clone(), &payload, &voice_id);
+    let request = build_request(truncated_text.clone(), &payload, &voice_id);
     let text_for_request = request.text.clone();
     let text_preview_debug = preview_text(&text_for_request);
     debug!(
         target = "ishowtts::api::tts",
         voice_id = %voice_id,
-        requested_engine = requested_engine.as_deref(),
-        shimmy_model = payload.shimmy_model.as_deref(),
+        requested_engine = payload.engine.as_deref(),
         text_len = text_for_request.len(),
         original_len = payload.text.len(),
         truncated = payload.text.len() != text_for_request.len(),
         text_preview = %text_preview_debug,
         "tts request accepted"
     );
-    let raw_response: TtsResponse = if is_shimmy {
-        let model_id = payload
-            .shimmy_model
-            .clone()
-            .ok_or((StatusCode::BAD_REQUEST, "缺少 shimmy_model".into()))?;
-        let shimmy_state = state.shimmy.clone();
-        let spec = shimmy_state.registry.to_spec(&model_id).ok_or((
-            StatusCode::BAD_REQUEST,
-            format!("未知的 Shimmy 模型 '{model_id}'"),
-        ))?;
-        if let Some(default_voice) = shimmy_default_voice(&spec) {
-            request.voice_id = default_voice;
-        }
-        let loaded = shimmy_state.engine.load(&spec).await.map_err(|err| {
-            (
-                StatusCode::BAD_GATEWAY,
-                format!("Shimmy 模型加载失败: {err}"),
-            )
-        })?;
-        let prompt = serde_json::to_string(&request).map_err(|err| {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("序列化 Shimmy 请求失败: {err}"),
-            )
-        })?;
-        let mut opts = GenOptions::default();
-        opts.stream = false;
-        let raw = loaded
-            .generate(&prompt, opts, None)
-            .await
-            .map_err(|err| (StatusCode::BAD_GATEWAY, format!("Shimmy 推理失败: {err}")))?;
-        let envelope: ShimmyEnvelope = serde_json::from_str(&raw).map_err(|err| {
-            (
-                StatusCode::BAD_GATEWAY,
-                format!("解析 Shimmy 响应失败: {err}"),
-            )
-        })?;
-        envelope.response
-    } else {
-        state
-            .synthesizer
-            .synthesize(request)
-            .await
-            .map_err(|err| (StatusCode::BAD_GATEWAY, err.to_string()))?
-    };
+    let raw_response: TtsResponse = state
+        .synthesizer
+        .synthesize(request)
+        .await
+        .map_err(|err| (StatusCode::BAD_GATEWAY, err.to_string()))?;
     let response = map_response(raw_response);
 
     let elapsed_ms = started_at.elapsed().as_millis();
@@ -276,15 +218,6 @@ fn map_response(resp: TtsResponse) -> SynthesizeResponse {
         waveform_len: resp.waveform_len,
         format: "audio/wav",
     }
-}
-
-fn shimmy_default_voice(spec: &ModelSpec) -> Option<String> {
-    spec.template.as_ref().and_then(|template| {
-        template
-            .split(',')
-            .find_map(|segment| segment.trim().strip_prefix("voice:"))
-            .map(|value| value.trim().to_string())
-    })
 }
 
 fn build_request(text: String, payload: &SynthesizePayload, voice_id: &str) -> TtsRequest {

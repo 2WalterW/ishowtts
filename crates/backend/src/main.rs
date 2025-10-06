@@ -20,7 +20,7 @@ use tower_http::trace::{
 };
 use tracing::{error, info, warn, Level};
 use tracing_subscriber::{fmt, EnvFilter};
-use tts_engine::{EngineKind, F5Engine, IndexTtsEngine, TtsEngine, VoiceOverrideUpdate};
+use tts_engine::{CsmEngine, EngineKind, F5Engine, IndexTtsEngine, TtsEngine, VoiceOverrideUpdate};
 use voice_overrides::VoiceOverrideStore;
 
 use crate::{
@@ -72,6 +72,13 @@ async fn main() -> Result<()> {
                 }
             }
         }
+        if let Some(csm_cfg) = config.csm.as_ref() {
+            for profile in &csm_cfg.voices {
+                if profile.preload {
+                    targets.push((profile.id.clone(), EngineKind::Shimmy));
+                }
+            }
+        }
         targets
     };
 
@@ -83,6 +90,11 @@ async fn main() -> Result<()> {
     if let Some(index_cfg) = config.index_tts.clone() {
         let index_engine: Arc<dyn TtsEngine> = Arc::new(IndexTtsEngine::new(index_cfg)?);
         engines.push(index_engine);
+    }
+
+    if let Some(csm_cfg) = config.csm.clone() {
+        let csm_engine: Arc<dyn TtsEngine> = Arc::new(CsmEngine::new(csm_cfg)?);
+        engines.push(csm_engine);
     }
 
     let synthesizer = Arc::new(Synthesizer::new(engines, config.api.max_parallel)?);
@@ -161,7 +173,6 @@ async fn main() -> Result<()> {
         default_voice: default_voice.clone(),
         danmaku: danmaku_service,
         voice_overrides: overrides_store.clone(),
-        shimmy: shimmy_state.clone(),
     };
 
     let trace_layer = TraceLayer::new_for_http()
