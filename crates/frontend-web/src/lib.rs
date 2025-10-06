@@ -1256,8 +1256,6 @@ fn app() -> Html {
         let history_state = history_state_submit;
         let clip_counter = clip_counter_submit;
         let voices_state = voices_state_submit;
-        let engine_options = engine_options_snapshot.clone();
-
         Callback::from(move |_| {
             let text = (*text_state).trim().to_string();
             if text.is_empty() {
@@ -1279,24 +1277,14 @@ fn app() -> Html {
                 return;
             };
 
-            let engine_option = {
-                let current = (*selected_engine_state).clone();
-                current
-                    .and_then(|value| {
-                        engine_options
-                            .iter()
-                            .find(|opt| opt.value == value)
-                            .cloned()
-                    })
-                    .or_else(|| engine_options.first().cloned())
-            };
+            let engine_choice = (*selected_engine_state)
+                .clone()
+                .and_then(|value| parse_engine_choice(&value))
+                .unwrap_or_else(|| EngineModelChoice::Tts {
+                    engine_label: voice_meta.engine_label.clone(),
+                });
 
-            let Some(engine_option) = engine_option else {
-                status_state.set(SynthesisStatus::Error("尚未选择模型".into()));
-                return;
-            };
-
-            if let EngineModelChoice::Tts { ref engine_label } = engine_option.choice {
+            if let EngineModelChoice::Tts { ref engine_label } = engine_choice {
                 if voice_meta.engine_label != *engine_label {
                     status_state.set(SynthesisStatus::Error("音色不属于当前模型".into()));
                     return;
@@ -1304,8 +1292,10 @@ fn app() -> Html {
             }
 
             let engine_value = voice_meta.engine.clone();
-            let engine_label_display = engine_option.label.clone();
-            let engine_choice = engine_option.choice.clone();
+            let engine_label_display = match &engine_choice {
+                EngineModelChoice::Tts { engine_label } => engine_label.clone(),
+                EngineModelChoice::Shimmy { model_id } => format!("Shimmy · {model_id}"),
+            };
             let engine_prompt_value = serde_json::Value::String(engine_value.clone());
 
             status_state.set(SynthesisStatus::Loading);
@@ -1862,7 +1852,6 @@ fn app() -> Html {
         _ => voices.clone(),
     };
     let voice_ready = !selected_voice.is_empty();
-    let engine_options_snapshot = engine_options.clone();
 
     let voice_reference_detail_view = (*voice_reference_state).clone();
     let voice_reference_error_msg = (*voice_reference_error_state).clone();
