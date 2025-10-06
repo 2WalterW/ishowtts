@@ -57,3 +57,14 @@ reference_text = "You know, you all know exactly who i am, say my name!"
 language = "en-US"
 engine_label = "IndexTTS"
 preload = true
+
+[index_tts_vllm]
+base_url = "http://127.0.0.1:6006"
+default_model = "index-tts-vllm"
+
+[[index_tts_vllm.voices]]
+id = "walter-vllm"
+character = "walter"
+engine_label = "IndexTTS-vLLM"
+language = "en-US"
+preload = false
