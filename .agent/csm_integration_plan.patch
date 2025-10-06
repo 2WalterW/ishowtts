@@ -1,0 +1,7 @@
+# CSM Integration Plan
+
+1. Extend Shimmy configuration to support registering multiple models.
+2. Add configuration entry for `unsloth/csm-1b` pointing at the cached snapshot.
+3. Adjust backend initialisation to register all configured Shimmy models.
+4. Ensure path canonicalisation covers extra models.
+5. Run formatting/checks and smoke-test the backend startup.
