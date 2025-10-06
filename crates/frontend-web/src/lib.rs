@@ -2113,7 +2113,13 @@ fn app() -> Html {
                     <label>
                         <span>{"模型"}</span>
                         <select onchange={on_model_change} value={selected_engine_value.clone()}>
-                            { for engine_options.iter().map(|engine| html! { <option value={engine.clone()}>{ engine.clone() }</option> }) }
+                            {
+                                for engine_options.iter().map(|option| {
+                                    let value = option.value.clone();
+                                    let label = option.label.clone();
+                                    html! { <option value={value}>{ label }</option> }
+                                })
+                            }
                         </select>
                     </label>
                     <label>
