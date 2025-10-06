@@ -208,11 +208,6 @@ impl AppConfig {
         Ok(())
     }
 
-    pub fn shimmy_entry(&self) -> ModelEntry {
-        self.shimmy
-            .to_model_entry(self.f5.python_package_path.clone())
-    }
-
     pub fn shimmy_entries(&self) -> Vec<ModelEntry> {
         self.shimmy
             .to_model_entries(self.f5.python_package_path.clone())
