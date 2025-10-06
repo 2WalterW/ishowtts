@@ -20,7 +20,9 @@ use tower_http::trace::{
 };
 use tracing::{error, info, warn, Level};
 use tracing_subscriber::{fmt, EnvFilter};
-use tts_engine::{EngineKind, F5Engine, IndexTtsEngine, TtsEngine, VoiceOverrideUpdate};
+use tts_engine::{
+    EngineKind, F5Engine, IndexTtsEngine, IndexTtsVllmEngine, TtsEngine, VoiceOverrideUpdate,
+};
 use voice_overrides::VoiceOverrideStore;
 
 use crate::{
@@ -72,6 +74,13 @@ async fn main() -> Result<()> {
                 }
             }
         }
+        if let Some(vllm_cfg) = config.index_tts_vllm.as_ref() {
+            for profile in &vllm_cfg.voices {
+                if profile.preload {
+                    targets.push((profile.id.clone(), EngineKind::IndexTtsVllm));
+                }
+            }
+        }
         targets
     };
 
@@ -83,6 +92,11 @@ async fn main() -> Result<()> {
     if let Some(index_cfg) = config.index_tts.clone() {
         let index_engine: Arc<dyn TtsEngine> = Arc::new(IndexTtsEngine::new(index_cfg)?);
         engines.push(index_engine);
+    }
+
+    if let Some(vllm_cfg) = config.index_tts_vllm.clone() {
+        let vllm_engine: Arc<dyn TtsEngine> = Arc::new(IndexTtsVllmEngine::new(vllm_cfg)?);
+        engines.push(vllm_engine);
     }
 
     let synthesizer = Arc::new(Synthesizer::new(engines, config.api.max_parallel)?);
