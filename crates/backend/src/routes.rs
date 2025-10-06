@@ -30,7 +30,10 @@ use crate::{
     voice_overrides::{OverrideAudio, VoiceOverrideStore},
 };
 use danmaku::message::{MessageContent, NormalizedMessage, Platform};
-use shimmy::{engine::GenOptions, AppState as ShimmyAppState};
+use shimmy::{
+    engine::{GenOptions, ModelSpec},
+    AppState as ShimmyAppState,
+};
 use tts_engine::{EngineKind, TtsRequest, TtsResponse, VoiceOverrideUpdate};
 
 const MAX_WORDS_PER_REQUEST: usize = 77;
@@ -165,7 +168,7 @@ pub async fn synthesize(
         return Err((StatusCode::BAD_REQUEST, "text must not be empty".into()));
     }
 
-    let request = build_request(truncated_text.clone(), &payload, &voice_id);
+    let mut request = build_request(truncated_text.clone(), &payload, &voice_id);
     let text_for_request = request.text.clone();
     let text_preview_debug = preview_text(&text_for_request);
     debug!(
@@ -189,6 +192,9 @@ pub async fn synthesize(
             StatusCode::BAD_REQUEST,
             format!("未知的 Shimmy 模型 '{model_id}'"),
         ))?;
+        if let Some(default_voice) = shimmy_default_voice(&spec) {
+            request.voice_id = default_voice;
+        }
         let loaded = shimmy_state.engine.load(&spec).await.map_err(|err| {
             (
                 StatusCode::BAD_GATEWAY,
@@ -270,6 +276,15 @@ fn map_response(resp: TtsResponse) -> SynthesizeResponse {
         waveform_len: resp.waveform_len,
         format: "audio/wav",
     }
+}
+
+fn shimmy_default_voice(spec: &ModelSpec) -> Option<String> {
+    spec.template.as_ref().and_then(|template| {
+        template
+            .split(',')
+            .find_map(|segment| segment.trim().strip_prefix("voice:"))
+            .map(|value| value.trim().to_string())
+    })
 }
 
 fn build_request(text: String, payload: &SynthesizePayload, voice_id: &str) -> TtsRequest {
