@@ -1714,26 +1714,63 @@ fn app() -> Html {
     let danmaku_status = (*danmaku_status_state).clone();
     let danmaku_stream_ready = *danmaku_stream_ready_state;
     let selected_voice = (*selected_voice_state).clone().unwrap_or_default();
-    let selected_engine = (*selected_engine_state).clone().unwrap_or_default();
-    let mut engine_options: Vec<String> = Vec::new();
+    let shimmy_models = (*shimmy_models_state).clone();
+    let mut engine_options: Vec<EngineOption> = Vec::new();
+    let mut seen_labels: HashSet<String> = HashSet::new();
     for voice in &voices {
-        if !engine_options.contains(&voice.engine_label) {
-            engine_options.push(voice.engine_label.clone());
+        if seen_labels.insert(voice.engine_label.clone()) {
+            let label = voice.engine_label.clone();
+            engine_options.push(EngineOption {
+                value: format!("tts:{label}"),
+                label: label.clone(),
+                choice: EngineModelChoice::Tts {
+                    engine_label: label,
+                },
+            });
         }
     }
-    let selected_engine_value =
-        if !selected_engine.is_empty() && engine_options.contains(&selected_engine) {
-            selected_engine.clone()
-        } else {
-            engine_options.first().cloned().unwrap_or_default()
-        };
-    let voices_for_engine: Vec<VoiceSummary> = voices
+    for model in &shimmy_models {
+        let model_name = model.name.clone();
+        engine_options.push(EngineOption {
+            value: format!("shimmy:{model_name}"),
+            label: format!("Shimmy · {model_name}"),
+            choice: EngineModelChoice::Shimmy {
+                model_id: model_name,
+            },
+        });
+    }
+
+    let selected_engine_raw = (*selected_engine_state).clone().unwrap_or_default();
+    let mut selected_engine_value = selected_engine_raw.clone();
+    if selected_engine_value.is_empty()
+        || !engine_options
+            .iter()
+            .any(|option| option.value == selected_engine_value)
+    {
+        selected_engine_value = engine_options
+            .first()
+            .map(|option| option.value.clone())
+            .unwrap_or_default();
+    }
+    let selected_engine_option = engine_options
         .iter()
-        .filter(|voice| {
-            selected_engine_value.is_empty() || voice.engine_label == selected_engine_value
-        })
-        .cloned()
-        .collect();
+        .find(|option| option.value == selected_engine_value)
+        .cloned();
+    let selected_engine_choice = selected_engine_option
+        .as_ref()
+        .map(|option| option.choice.clone());
+    let selected_engine_label = selected_engine_option
+        .as_ref()
+        .map(|option| option.label.clone())
+        .unwrap_or_default();
+    let voices_for_engine: Vec<VoiceSummary> = match selected_engine_choice {
+        Some(EngineModelChoice::Tts { ref engine_label }) => voices
+            .iter()
+            .filter(|voice| &voice.engine_label == engine_label)
+            .cloned()
+            .collect(),
+        _ => voices.clone(),
+    };
     let voice_ready = !selected_voice.is_empty();
 
     let voice_reference_detail_view = (*voice_reference_state).clone();
