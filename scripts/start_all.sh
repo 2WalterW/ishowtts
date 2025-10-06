@@ -45,6 +45,12 @@ set -- "${TRUNK_ARGS[@]}"
 
 mkdir -p "$REPO_DIR/logs"
 
+# Build backend/frontend so the latest binaries are ready for launch
+"$REPO_DIR/scripts/build_all.sh" >>"$REPO_DIR/logs/build.log" 2>&1 || {
+  echo "error: build_all.sh failed; see logs/build.log" >&2
+  exit 1
+}
+
 if [[ ! -x "$BACKEND_SCRIPT" ]]; then
   echo "error: backend launcher '$BACKEND_SCRIPT' not found or not executable" >&2
   exit 1
