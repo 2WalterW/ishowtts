@@ -51,6 +51,8 @@ pub struct ShimmyConfig {
     pub ctx_len: Option<usize>,
     #[serde(default)]
     pub n_threads: Option<i32>,
+    #[serde(default)]
+    pub extra_models: Vec<ShimmyAdditionalModel>,
 }
 
 impl Default for ShimmyConfig {
@@ -60,6 +62,7 @@ impl Default for ShimmyConfig {
             template: Some("text-to-speech".to_string()),
             ctx_len: Some(1024),
             n_threads: None,
+            extra_models: Vec::new(),
         }
     }
 }
@@ -78,6 +81,48 @@ impl ShimmyConfig {
             ctx_len: self.ctx_len,
             n_threads: self.n_threads,
         }
+    }
+
+    pub fn to_model_entries(&self, base_path: PathBuf) -> Vec<ModelEntry> {
+        let mut entries = Vec::with_capacity(1 + self.extra_models.len());
+        entries.push(self.to_model_entry(base_path));
+        entries.extend(
+            self.extra_models
+                .iter()
+                .map(ShimmyAdditionalModel::to_model_entry),
+        );
+        entries
+    }
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct ShimmyAdditionalModel {
+    pub name: String,
+    pub base_path: PathBuf,
+    #[serde(default)]
+    pub template: Option<String>,
+    #[serde(default)]
+    pub ctx_len: Option<usize>,
+    #[serde(default)]
+    pub n_threads: Option<i32>,
+}
+
+impl ShimmyAdditionalModel {
+    fn to_model_entry(&self) -> ModelEntry {
+        ModelEntry {
+            name: self.name.clone(),
+            base_path: self.base_path.clone(),
+            lora_path: None,
+            template: self.template.clone(),
+            ctx_len: self.ctx_len,
+            n_threads: self.n_threads,
+        }
+    }
+
+    fn rebase(&mut self, base: &Path) -> Result<()> {
+        let label = format!("Shimmy model {} base path", self.name);
+        self.base_path = normalize_required(base, &self.base_path, &label)?;
+        Ok(())
     }
 }
 
@@ -133,6 +178,10 @@ impl AppConfig {
             profile.reference_audio = normalize_required(base, &profile.reference_audio, &label)?;
         }
 
+        for extra in &mut self.shimmy.extra_models {
+            extra.rebase(base)?;
+        }
+
         if let Some(ref mut index_cfg) = self.index_tts {
             index_cfg.python_package_path = normalize_required(
                 base,
@@ -162,6 +211,11 @@ impl AppConfig {
     pub fn shimmy_entry(&self) -> ModelEntry {
         self.shimmy
             .to_model_entry(self.f5.python_package_path.clone())
+    }
+
+    pub fn shimmy_entries(&self) -> Vec<ModelEntry> {
+        self.shimmy
+            .to_model_entries(self.f5.python_package_path.clone())
     }
 }
 
