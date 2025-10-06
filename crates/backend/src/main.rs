@@ -161,6 +161,7 @@ async fn main() -> Result<()> {
         default_voice: default_voice.clone(),
         danmaku: danmaku_service,
         voice_overrides: overrides_store.clone(),
+        shimmy: shimmy_state.clone(),
     };
 
     let trace_layer = TraceLayer::new_for_http()

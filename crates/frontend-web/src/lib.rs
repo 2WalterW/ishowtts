@@ -200,66 +200,6 @@ fn parse_engine_choice(value: &str) -> Option<EngineModelChoice> {
     None
 }
 
-fn extract_shimmy_payload(body: &str) -> Option<String> {
-    let mut candidate: Option<String> = None;
-    let mut chunk_lines: Vec<String> = Vec::new();
-
-    for line in body.lines() {
-        let trimmed = line.trim();
-        if trimmed.is_empty() {
-            if !chunk_lines.is_empty() {
-                let combined = chunk_lines.join("\n");
-                let trimmed_combined = combined.trim();
-                if !trimmed_combined.is_empty() && !trimmed_combined.eq_ignore_ascii_case("[DONE]")
-                {
-                    candidate = Some(trimmed_combined.to_string());
-                }
-                chunk_lines.clear();
-            }
-            continue;
-        }
-
-        if let Some(rest) = trimmed.strip_prefix("data:") {
-            chunk_lines.push(rest.trim().to_string());
-            continue;
-        }
-
-        if chunk_lines.is_empty() && trimmed.starts_with('{') {
-            candidate = Some(trimmed.to_string());
-        }
-    }
-
-    if !chunk_lines.is_empty() {
-        let combined = chunk_lines.join("\n");
-        let trimmed_combined = combined.trim();
-        if !trimmed_combined.is_empty() && !trimmed_combined.eq_ignore_ascii_case("[DONE]") {
-            candidate = Some(trimmed_combined.to_string());
-        }
-    }
-
-    if candidate.is_none() {
-        let trimmed = body.trim();
-        if !trimmed.is_empty()
-            && !trimmed.eq_ignore_ascii_case("[DONE]")
-            && trimmed.starts_with('{')
-        {
-            candidate = Some(trimmed.to_string());
-        }
-    }
-
-    candidate
-}
-
-#[derive(Clone, Debug, Deserialize)]
-struct ShimmyGenerateResponse {
-    response: String,
-}
-
-#[derive(Clone, Debug, Deserialize)]
-struct ShimmyTtsEnvelope {
-    response: TtsResponse,
-}
-
 #[derive(Clone, Debug, PartialEq, Default)]
 struct HistoryState {
     entries: VecDeque<ClipHistoryItem>,
@@ -1380,16 +1320,50 @@ fn app() -> Html {
                 payload.insert("seed".into(), value);
             }
 
-            let payload_value = serde_json::Value::Object(payload.clone());
+            let payload_base = payload.clone();
             let history_state = history_state.clone();
             let status_state = status_state.clone();
             let clip_counter = clip_counter.clone();
-            let engine_value_clone = engine_value.clone();
             let engine_label_clone = engine_label_display.clone();
             let text_clone = text.clone();
             let engine_choice_clone = engine_choice.clone();
+            let voice_engine_value = engine_value.clone();
 
             spawn_local(async move {
+                let mut request_payload = payload_base.clone();
+                let (request_engine_value, request_body) = match &engine_choice_clone {
+                    EngineModelChoice::Tts { .. } => {
+                        request_payload.insert(
+                            "engine".into(),
+                            serde_json::Value::String(voice_engine_value.clone()),
+                        );
+                        (
+                            voice_engine_value.clone(),
+                            serde_json::Value::Object(request_payload).to_string(),
+                        )
+                    }
+                    EngineModelChoice::Shimmy { model_id } => {
+                        request_payload
+                            .insert("engine".into(), serde_json::Value::String("shimmy".into()));
+                        request_payload.insert(
+                            "shimmy_model".into(),
+                            serde_json::Value::String(model_id.clone()),
+                        );
+                        (
+                            "shimmy".to_string(),
+                            serde_json::Value::Object(request_payload).to_string(),
+                        )
+                    }
+                };
+
+                let request = Request::post(&format!("{BACKEND_URL}/api/tts"))
+                    .header("Content-Type", "application/json")
+                    .body(request_body);
+
+                let fallback_engine_value = request_engine_value.clone();
+                let fallback_engine_label = engine_label_clone.clone();
+                let text_for_history = text_clone.clone();
+
                 let handle_success = |data: TtsResponse| {
                     let mut clip_id = *clip_counter;
                     clip_id += 1;
@@ -1402,13 +1376,13 @@ fn app() -> Html {
                         engine: data
                             .engine
                             .clone()
-                            .unwrap_or_else(|| engine_value_clone.clone()),
+                            .unwrap_or_else(|| fallback_engine_value.clone()),
                         engine_label: data
                             .engine_label
                             .clone()
-                            .unwrap_or_else(|| engine_label_clone.clone()),
+                            .unwrap_or_else(|| fallback_engine_label.clone()),
                         voice_id: data.voice_id.clone(),
-                        text: text_clone.clone(),
+                        text: text_for_history.clone(),
                         created_at: now_string(),
                         sample_rate: data.sample_rate,
                         waveform_len: data.waveform_len,
@@ -1419,94 +1393,23 @@ fn app() -> Html {
                     status_state.set(SynthesisStatus::Ready("生成完成 ✅".into()));
                 };
 
-                match engine_choice_clone {
-                    EngineModelChoice::Tts { .. } => {
-                        let request_body = payload_value.to_string();
-                        let request = Request::post(&format!("{BACKEND_URL}/api/tts"))
-                            .header("Content-Type", "application/json")
-                            .body(request_body);
-
-                        let response = match request {
-                            Ok(req) => req.send().await,
-                            Err(err) => {
-                                status_state
-                                    .set(SynthesisStatus::Error(format!("构建请求失败: {err}")));
-                                return;
-                            }
-                        };
-
-                        match response {
-                            Ok(resp) => match resp.json::<TtsResponse>().await {
-                                Ok(data) => handle_success(data),
-                                Err(err) => status_state
-                                    .set(SynthesisStatus::Error(format!("解析响应失败: {err}"))),
-                            },
-                            Err(err) => {
-                                status_state.set(SynthesisStatus::Error(format!("请求失败: {err}")))
-                            }
-                        }
+                let response = match request {
+                    Ok(req) => req.send().await,
+                    Err(err) => {
+                        status_state.set(SynthesisStatus::Error(format!("构建请求失败: {err}")));
+                        return;
                     }
-                    EngineModelChoice::Shimmy { model_id } => {
-                        let shimmy_body = serde_json::json!({
-                            "model": model_id,
-                            "prompt": payload_value.to_string(),
-                        });
+                };
 
-                        let request = Request::post(&format!("{BACKEND_URL}/shimmy/generate"))
-                            .header("Content-Type", "application/json")
-                            .body(shimmy_body.to_string());
-
-                        let response = match request {
-                            Ok(req) => req.send().await,
-                            Err(err) => {
-                                status_state
-                                    .set(SynthesisStatus::Error(format!("构建请求失败: {err}")));
-                                return;
-                            }
-                        };
-
-                        match response {
-                            Ok(resp) => match resp.text().await {
-                                Ok(body) => {
-                                    if let Some(raw_json) = extract_shimmy_payload(&body) {
-                                        let envelope =
-                                            serde_json::from_str::<ShimmyTtsEnvelope>(&raw_json)
-                                                .or_else(|_| {
-                                                    serde_json::from_str::<ShimmyGenerateResponse>(
-                                                        &raw_json,
-                                                    )
-                                                    .and_then(|wrapper| {
-                                                        serde_json::from_str::<ShimmyTtsEnvelope>(
-                                                            &wrapper.response,
-                                                        )
-                                                    })
-                                                });
-
-                                        match envelope {
-                                            Ok(envelope) => handle_success(envelope.response),
-                                            Err(err) => status_state.set(SynthesisStatus::Error(
-                                                format!("解析 Shimmy 响应失败: {err}"),
-                                            )),
-                                        }
-                                    } else {
-                                        let preview: String = body
-                                            .chars()
-                                            .filter(|ch| *ch != '\r' && *ch != '\n')
-                                            .take(80)
-                                            .collect();
-                                        status_state.set(SynthesisStatus::Error(format!(
-                                            "Shimmy 响应为空或无效: {}",
-                                            preview
-                                        )));
-                                    }
-                                }
-                                Err(err) => status_state
-                                    .set(SynthesisStatus::Error(format!("读取响应失败: {err}"))),
-                            },
-                            Err(err) => {
-                                status_state.set(SynthesisStatus::Error(format!("请求失败: {err}")))
-                            }
+                match response {
+                    Ok(resp) => match resp.json::<TtsResponse>().await {
+                        Ok(data) => handle_success(data),
+                        Err(err) => {
+                            status_state.set(SynthesisStatus::Error(format!("解析响应失败: {err}")))
                         }
+                    },
+                    Err(err) => {
+                        status_state.set(SynthesisStatus::Error(format!("请求失败: {err}")))
                     }
                 }
             });

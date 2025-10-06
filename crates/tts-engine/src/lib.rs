@@ -31,7 +31,7 @@ use tracing::{debug, info, instrument};
 use uuid::Uuid;
 
 mod engine_kind;
-use engine_kind::EngineKind;
+pub use engine_kind::EngineKind;
 
 static PYTHONPATH_LOCK: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
 static PYTHONPATH_ENTRIES: Lazy<Mutex<HashSet<OsString>>> =
