@@ -120,7 +120,9 @@ async fn main() -> Result<()> {
     let shimmy_engine = F5ShimmyEngine::new(synthesizer.clone());
 
     let mut registry = shimmy::model_registry::Registry::new();
-    registry.register(config.shimmy_entry());
+    for entry in config.shimmy_entries() {
+        registry.register(entry);
+    }
     let shimmy_state = Arc::new(ShimmyAppState {
         engine: Box::new(shimmy_engine),
         registry,
