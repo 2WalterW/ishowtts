@@ -31,7 +31,7 @@ n_threads = 2
 [[shimmy.extra_models]]
 name = "unsloth-csm-1b"
 base_path = "../data/cache/huggingface/models--unsloth--csm-1b/snapshots/39e8c756bec133ad7eb9ea1097c84a2bd891c949"
-template = "chatml"
+template = "chatml,voice:walter"
 ctx_len = 4096
 
 
