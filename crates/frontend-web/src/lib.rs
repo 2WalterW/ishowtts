@@ -186,12 +186,6 @@ struct EngineOption {
     choice: EngineModelChoice,
 }
 
-impl EngineOption {
-    fn matches_value(&self, value: &str) -> bool {
-        self.value == value
-    }
-}
-
 fn parse_engine_choice(value: &str) -> Option<EngineModelChoice> {
     if let Some(rest) = value.strip_prefix("tts:") {
         return Some(EngineModelChoice::Tts {
