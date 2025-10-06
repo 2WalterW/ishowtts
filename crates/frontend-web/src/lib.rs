@@ -371,6 +371,7 @@ fn u32_value(input: &str) -> Option<serde_json::Value> {
 fn app() -> Html {
     let text_state = use_state(|| String::new());
     let voices_state = use_state(Vec::<VoiceSummary>::new);
+    let shimmy_models_state = use_state(Vec::<ShimmyModelInfo>::new);
     let selected_voice_state = use_state(|| Option::<String>::None);
     let selected_engine_state = use_state(|| Option::<String>::None);
     let voice_manager_open_state = use_state(|| false);
