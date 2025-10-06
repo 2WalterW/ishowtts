@@ -1475,6 +1475,7 @@ fn app() -> Html {
         let audio_state = danmaku_audio_state.clone();
         let selected_voice_state = selected_voice_state.clone();
         let selected_engine_state = selected_engine_state.clone();
+        let voices_state = voices_state.clone();
 
         Callback::from(move |_| {
             let channel = (*channel_state).clone();
@@ -1489,7 +1490,20 @@ fn app() -> Html {
                 return;
             }
             let voice_id = voice_option.unwrap();
-            let engine_option = (*selected_engine_state).clone();
+
+            let voices_snapshot = (*voices_state).clone();
+            let Some(voice_meta) = voices_snapshot.iter().find(|v| v.id == voice_id) else {
+                status_state.set("找不到对应的音色".into());
+                return;
+            };
+
+            let engine_payload = (*selected_engine_state)
+                .clone()
+                .and_then(|value| parse_engine_choice(&value))
+                .map(|choice| match choice {
+                    EngineModelChoice::Tts { .. } => voice_meta.engine.clone(),
+                    EngineModelChoice::Shimmy { .. } => voice_meta.engine.clone(),
+                });
 
             if *active_state {
                 status_state.set("当前已有频道在播报，先停止后再尝试。".into());
@@ -1518,7 +1532,7 @@ fn app() -> Html {
                     "voice_id".into(),
                     serde_json::Value::String(voice_id.clone()),
                 );
-                if let Some(engine) = engine_option.clone() {
+                if let Some(engine) = engine_payload.clone() {
                     payload.insert("engine".into(), serde_json::Value::String(engine));
                 }
 
