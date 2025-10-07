@@ -141,7 +141,6 @@ node_modules/
 # Third-party submodules (large external repos)
 third_party/*/.git
 third_party/*/
-!third_party/csm_runtime/
 
 # Agent documentation (cleanup)
 .agent/*.md

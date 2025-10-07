@@ -156,9 +156,27 @@ impl HistorySource {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Deserialize)]
+struct ShimmyModelListResponse {
+    models: Vec<ShimmyModelInfo>,
+}
+
+#[derive(Clone, Debug, PartialEq, Deserialize)]
+struct ShimmyModelInfo {
+    name: String,
+    #[serde(default)]
+    size_bytes: Option<u64>,
+    #[serde(default)]
+    model_type: Option<String>,
+    #[serde(default)]
+    parameter_count: Option<String>,
+    source: String,
+}
+
 #[derive(Clone, Debug, PartialEq)]
 enum EngineModelChoice {
     Tts { engine_label: String },
+    Shimmy { model_id: String },
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -172,6 +190,11 @@ fn parse_engine_choice(value: &str) -> Option<EngineModelChoice> {
     if let Some(rest) = value.strip_prefix("tts:") {
         return Some(EngineModelChoice::Tts {
             engine_label: rest.to_string(),
+        });
+    }
+    if let Some(rest) = value.strip_prefix("shimmy:") {
+        return Some(EngineModelChoice::Shimmy {
+            model_id: rest.to_string(),
         });
     }
     None
@@ -332,6 +355,7 @@ fn u32_value(input: &str) -> Option<serde_json::Value> {
 fn app() -> Html {
     let text_state = use_state(|| String::new());
     let voices_state = use_state(Vec::<VoiceSummary>::new);
+    let shimmy_models_state = use_state(Vec::<ShimmyModelInfo>::new);
     let selected_voice_state = use_state(|| Option::<String>::None);
     let selected_engine_state = use_state(|| Option::<String>::None);
     let voice_manager_open_state = use_state(|| false);
@@ -719,6 +743,31 @@ fn app() -> Html {
     }
 
     {
+        let shimmy_models_state = shimmy_models_state.clone();
+        let status_state = status_state.clone();
+        use_effect_with((), move |_| {
+            let shimmy_models_state = shimmy_models_state.clone();
+            let status_state = status_state.clone();
+            spawn_local(async move {
+                match Request::get(&format!("{BACKEND_URL}/shimmy/models"))
+                    .send()
+                    .await
+                {
+                    Ok(resp) => match resp.json::<ShimmyModelListResponse>().await {
+                        Ok(list) => shimmy_models_state.set(list.models),
+                        Err(err) => status_state
+                            .set(SynthesisStatus::Error(format!("解析模型列表失败: {err}"))),
+                    },
+                    Err(err) => {
+                        status_state.set(SynthesisStatus::Error(format!("请求模型列表失败: {err}")))
+                    }
+                }
+            });
+            || ()
+        });
+    }
+
+    {
         let voice_manager_open_state = voice_manager_open_state.clone();
         let selected_voice_state = selected_voice_state.clone();
         let voice_reference_state = voice_reference_state.clone();
@@ -848,6 +897,7 @@ fn app() -> Html {
                     selected_voice_state.set(None);
                 } else {
                     let voices = (*voices_state).clone();
+                    let current_voice = (*selected_voice_state).clone();
                     let choice = parse_engine_choice(&value);
                     let next_voice = match choice {
                         Some(EngineModelChoice::Tts { ref engine_label }) => voices
@@ -855,6 +905,17 @@ fn app() -> Html {
                             .find(|v| &v.engine_label == engine_label)
                             .map(|v| v.id.clone())
                             .or_else(|| voices.first().map(|v| v.id.clone())),
+                        Some(EngineModelChoice::Shimmy { .. }) => {
+                            if let Some(existing) = current_voice {
+                                if voices.iter().any(|v| v.id == existing) {
+                                    Some(existing)
+                                } else {
+                                    voices.first().map(|v| v.id.clone())
+                                }
+                            } else {
+                                voices.first().map(|v| v.id.clone())
+                            }
+                        }
                         None => voices.first().map(|v| v.id.clone()),
                     };
                     selected_engine_state.set(Some(value));
@@ -1207,14 +1268,18 @@ fn app() -> Html {
                     engine_label: voice_meta.engine_label.clone(),
                 });
 
-            let EngineModelChoice::Tts { ref engine_label } = engine_choice;
-            if voice_meta.engine_label != *engine_label {
-                status_state.set(SynthesisStatus::Error("音色不属于当前模型".into()));
-                return;
+            if let EngineModelChoice::Tts { ref engine_label } = engine_choice {
+                if voice_meta.engine_label != *engine_label {
+                    status_state.set(SynthesisStatus::Error("音色不属于当前模型".into()));
+                    return;
+                }
             }
 
             let engine_value = voice_meta.engine.clone();
-            let engine_label_display = voice_meta.engine_label.clone();
+            let engine_label_display = match &engine_choice {
+                EngineModelChoice::Tts { engine_label } => engine_label.clone(),
+                EngineModelChoice::Shimmy { model_id } => format!("Shimmy · {model_id}"),
+            };
             let engine_prompt_value = serde_json::Value::String(engine_value.clone());
 
             status_state.set(SynthesisStatus::Loading);
@@ -1261,21 +1326,41 @@ fn app() -> Html {
             let clip_counter = clip_counter.clone();
             let engine_label_clone = engine_label_display.clone();
             let text_clone = text.clone();
+            let engine_choice_clone = engine_choice.clone();
             let voice_engine_value = engine_value.clone();
 
             spawn_local(async move {
                 let mut request_payload = payload_base.clone();
-                request_payload.insert(
-                    "engine".into(),
-                    serde_json::Value::String(voice_engine_value.clone()),
-                );
-                let request_body = serde_json::Value::Object(request_payload).to_string();
+                let (request_engine_value, request_body) = match &engine_choice_clone {
+                    EngineModelChoice::Tts { .. } => {
+                        request_payload.insert(
+                            "engine".into(),
+                            serde_json::Value::String(voice_engine_value.clone()),
+                        );
+                        (
+                            voice_engine_value.clone(),
+                            serde_json::Value::Object(request_payload).to_string(),
+                        )
+                    }
+                    EngineModelChoice::Shimmy { model_id } => {
+                        request_payload
+                            .insert("engine".into(), serde_json::Value::String("shimmy".into()));
+                        request_payload.insert(
+                            "shimmy_model".into(),
+                            serde_json::Value::String(model_id.clone()),
+                        );
+                        (
+                            "shimmy".to_string(),
+                            serde_json::Value::Object(request_payload).to_string(),
+                        )
+                    }
+                };
 
                 let request = Request::post(&format!("{BACKEND_URL}/api/tts"))
                     .header("Content-Type", "application/json")
                     .body(request_body);
 
-                let fallback_engine_value = voice_engine_value.clone();
+                let fallback_engine_value = request_engine_value.clone();
                 let fallback_engine_label = engine_label_clone.clone();
                 let text_for_history = text_clone.clone();
 
@@ -1375,7 +1460,10 @@ fn app() -> Html {
             let engine_payload = (*selected_engine_state)
                 .clone()
                 .and_then(|value| parse_engine_choice(&value))
-                .map(|_| voice_meta.engine.clone());
+                .map(|choice| match choice {
+                    EngineModelChoice::Tts { .. } => voice_meta.engine.clone(),
+                    EngineModelChoice::Shimmy { .. } => voice_meta.engine.clone(),
+                });
 
             if *active_state {
                 status_state.set("当前已有频道在播报，先停止后再尝试。".into());
@@ -1681,6 +1769,7 @@ fn app() -> Html {
     let danmaku_status = (*danmaku_status_state).clone();
     let danmaku_stream_ready = *danmaku_stream_ready_state;
     let selected_voice = (*selected_voice_state).clone().unwrap_or_default();
+    let shimmy_models = (*shimmy_models_state).clone();
     let mut engine_options: Vec<EngineOption> = Vec::new();
     let mut seen_labels: HashSet<String> = HashSet::new();
     for voice in &voices {
@@ -1694,6 +1783,19 @@ fn app() -> Html {
                 },
             });
         }
+    }
+    for model in &shimmy_models {
+        if model.name.eq_ignore_ascii_case("f5-tts-demo") {
+            continue;
+        }
+        let model_name = model.name.clone();
+        engine_options.push(EngineOption {
+            value: format!("shimmy:{model_name}"),
+            label: format!("Shimmy · {model_name}"),
+            choice: EngineModelChoice::Shimmy {
+                model_id: model_name,
+            },
+        });
     }
 
     let selected_engine_raw = (*selected_engine_state).clone().unwrap_or_default();

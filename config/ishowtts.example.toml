@@ -28,18 +28,11 @@ template = "voice:demo"
 ctx_len = 256
 n_threads = 2
 
-[csm]
-python_package_path = "../third_party/csm_runtime"
-model_id = "unsloth/csm-1b"
-device = "cuda"
-dtype = "bfloat16"
-
-[[csm.voices]]
-id = "csm-walter"
-speaker = 0
-prompt_prefix = ""
-engine_label = "CSM"
-preload = false
+[[shimmy.extra_models]]
+name = "unsloth-csm-1b"
+base_path = "../data/cache/huggingface/models--unsloth--csm-1b/snapshots/39e8c756bec133ad7eb9ea1097c84a2bd891c949"
+template = "chatml,voice:walter"
+ctx_len = 4096
 
 
 [danmaku.twitch]
